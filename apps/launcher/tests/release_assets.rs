@@ -161,3 +161,28 @@ fn the_release_runs_when_a_version_reaches_main() {
         "la publication doit être sautée quand la version est déjà publiée"
     );
 }
+
+#[test]
+fn every_build_job_fetches_the_sibling_repository() {
+    // Le launcher dépend de `../lpdnsoft-libs` par chemin. Sans ce second checkout, la
+    // compilation échoue sur le runner — c'est arrivé à la première publication, et le
+    // workflow paraissait pourtant valide.
+    let checkouts = RELEASE.matches("path: lpdnsoft-libs").count();
+    let builds = RELEASE.matches("Compilation").count();
+    assert!(builds >= 3, "trois systèmes compilent : {builds}");
+    assert_eq!(
+        checkouts, builds,
+        "chaque job qui compile doit cloner le dépôt frère ({builds} attendus, {checkouts} trouvés)"
+    );
+    assert!(RELEASE.contains("repository: ${{ github.repository_owner }}/lpdnsoft-libs"));
+}
+
+#[test]
+fn the_publish_job_works_outside_the_checkout() {
+    // Il ne clone rien : si `defaults.run.working-directory` restait sur le dépôt, `cd dist`
+    // échouerait faute de dossier.
+    assert!(
+        RELEASE.contains("working-directory: ."),
+        "le job de publication doit travailler à la racine"
+    );
+}

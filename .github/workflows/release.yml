@@ -23,6 +23,12 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+# Le launcher dépend du dépôt frère par `path = "../lpdnsoft-libs/..."` : les deux dépôts
+# sont donc clonés côte à côte, et tout s'exécute depuis `lpdnsoft-launcher`.
+defaults:
+  run:
+    working-directory: lpdnsoft-launcher
+
 jobs:
   prepare:
     runs-on: ubuntu-24.04
@@ -31,6 +37,8 @@ jobs:
       release: ${{ steps.check.outputs.release }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: lpdnsoft-launcher
       - id: check
         env:
           GH_TOKEN: ${{ github.token }}
@@ -52,8 +60,17 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: lpdnsoft-launcher
+      # Dépôt frère : dépendance par chemin, hors du dépôt.
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/lpdnsoft-libs
+          path: lpdnsoft-libs
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lpdnsoft-launcher
       - name: Outils de paquet
         uses: taiki-e/install-action@v2
         with:
@@ -80,8 +97,8 @@ jobs:
         with:
           name: linux
           path: |
-            lpdnsoft-launcher-*-linux-x86_64.deb
-            lpdnsoft-launcher-*-linux-x86_64.rpm
+            lpdnsoft-launcher/lpdnsoft-launcher-*-linux-x86_64.deb
+            lpdnsoft-launcher/lpdnsoft-launcher-*-linux-x86_64.rpm
 
   windows:
     needs: prepare
@@ -91,8 +108,16 @@ jobs:
       - name: Chemins longs
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
+        with:
+          path: lpdnsoft-launcher
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/lpdnsoft-libs
+          path: lpdnsoft-libs
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lpdnsoft-launcher
       - name: WiX
         # WiX 5 s'installe comme outil dotnet ; `choco install wixtoolset` poserait WiX 3,
         # qui ne connaît pas `wix build` (même choix qu'aNkou, ADR 0011).
@@ -111,7 +136,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: lpdnsoft-launcher-*-windows-x86_64.msi
+          path: lpdnsoft-launcher/lpdnsoft-launcher-*-windows-x86_64.msi
 
   macos:
     needs: prepare
@@ -126,10 +151,18 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: lpdnsoft-launcher
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/lpdnsoft-libs
+          path: lpdnsoft-libs
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.arch }}-apple-darwin
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lpdnsoft-launcher
       - name: Compilation
         run: |
           rustup target add ${{ matrix.arch }}-apple-darwin
@@ -145,11 +178,15 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
-          path: lpdnsoft-launcher-*-macos-${{ matrix.arch }}.pkg
+          path: lpdnsoft-launcher/lpdnsoft-launcher-*-macos-${{ matrix.arch }}.pkg
 
   publish:
     needs: [prepare, linux, windows, macos]
     runs-on: ubuntu-24.04
+    # Ce job ne compile pas : il n'a pas de dépôt cloné, donc il travaille à la racine.
+    defaults:
+      run:
+        working-directory: .
     steps:
       - uses: actions/download-artifact@v4
         with:
