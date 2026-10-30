@@ -33,7 +33,8 @@ Prérequis : Rust stable ≥ 1.95, `cargo install cargo-deny --locked`.
 
 ## Règles
 
-- Édition 2024, `resolver = "3"`, licence `MIT OR Apache-2.0`.
+- Édition 2024, `resolver = "3"`, licence `MIT` (le texte est `LICENSE-MIT` ; ne jamais
+  déclarer une licence dont le fichier n'existe pas, un test le vérifie).
 - `unsafe_code = "forbid"` ; clippy `unwrap_used`, `expect_used`, `dbg_macro`, `todo` en
   `deny` (autorisés dans les tests).
 - Une erreur `thiserror` par crate ; `anyhow` seulement dans `apps/*` et `xtask`.
