@@ -35,6 +35,7 @@ fn release(assets: Vec<Asset>) -> Release {
         }),
         assets,
         notes_url: "https://example.test/notes".into(),
+        notes: None,
     }
 }
 

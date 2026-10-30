@@ -38,6 +38,9 @@ struct ReleaseJson {
     assets: Vec<AssetJson>,
     #[serde(default)]
     html_url: Option<String>,
+    /// Texte des notes de version, écrit par l'auteur.
+    #[serde(default)]
+    body: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -61,7 +64,9 @@ impl ReleaseJson {
             })
             .collect();
         let notes = self.html_url.unwrap_or_else(|| app.notes_url());
-        Release::new(&self.tag_name, published, assets, notes).map_err(GithubError::Version)
+        Release::new(&self.tag_name, published, assets, notes)
+            .map(|release| release.with_notes(self.body))
+            .map_err(GithubError::Version)
     }
 }
 
@@ -103,6 +108,40 @@ pub fn parse_release(json: &str, app: &AppSpec) -> Result<Release, GithubError> 
     let raw: ReleaseJson =
         serde_json::from_str(json).map_err(|e| GithubError::Decode(e.to_string()))?;
     raw.into_release(app)
+}
+
+/// Nombre de versions demandées quand on ouvre l'historique.
+pub const HISTORY_LIMIT: usize = 30;
+
+/// Lit une liste de releases ; un élément illisible est ignoré plutôt que de tout perdre.
+pub fn parse_releases(json: &str, app: &AppSpec) -> Result<Vec<Release>, GithubError> {
+    let raw: Vec<ReleaseJson> =
+        serde_json::from_str(json).map_err(|e| GithubError::Decode(e.to_string()))?;
+    Ok(raw
+        .into_iter()
+        .filter_map(|release| release.into_release(app).ok())
+        .collect())
+}
+
+/// Historique des versions publiées, de la plus récente à la plus ancienne.
+///
+/// Une requête par appel : elle n'est faite qu'à l'ouverture de la fenêtre d'historique.
+pub async fn releases(
+    client: &reqwest::Client,
+    app: &AppSpec,
+) -> Result<Vec<Release>, GithubError> {
+    let url = format!("{API}/repos/{}/releases?per_page={HISTORY_LIMIT}", app.repo);
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| GithubError::Network(e.to_string()))?;
+    classify(response.status().as_u16())?;
+    let body = response
+        .text()
+        .await
+        .map_err(|e| GithubError::Decode(e.to_string()))?;
+    parse_releases(&body, app)
 }
 
 /// Réponse à une lecture : la release, ou l'annonce que le cache suffit.
