@@ -12,12 +12,15 @@ const STEPS: &[&[&str]] = &[
         "clippy",
         "--workspace",
         "--all-targets",
+        // Le verrou doit rester synchronisé : sans ça, une dépendance ajoutée sans
+        // mettre à jour Cargo.lock passerait la CI et casserait un build reproductible.
+        "--locked",
         "--",
         "-D",
         "warnings",
     ],
     // Tous les binaires de test, même après un échec : aucun échec n'en cache un autre.
-    &["test", "--workspace", "--no-fail-fast"],
+    &["test", "--workspace", "--no-fail-fast", "--locked"],
     &["deny", "check"],
 ];
 

@@ -46,6 +46,23 @@ Aucune chaîne visible en dur : tout passe par `t!(&loc, "id", arg = valeur)`. A
 clé dans `locales/en/launcher.ftl` **et** `locales/fr/launcher.ftl` — une clé absente casse la
 compilation.
 
+## Tests : définition de « terminé »
+
+Aucun travail n'est livré sans ses tests.
+
+- **Ajouter les tests du comportement modifié**, dans le même changement que le code.
+- **Les faire passer avant de livrer** : `cargo xtask ci` doit sortir en exit 0 (i18n,
+  `fmt --check`, `clippy -D warnings`, tests, `cargo deny check`). Un test rouge ne se
+  reporte pas à plus tard.
+- **Un test nouveau échoue sans le changement** ; sinon il ne prouve rien.
+- **Ne jamais désactiver** un test existant pour faire passer une modification : le
+  corriger, ou expliquer pourquoi il n'a plus de sens.
+- **Indiquer dans la livraison** la commande lancée et son résultat exact, avec les
+  commandes git et le formulaire de PR.
+
+Stratégie et niveaux : `docs/superpowers/specs/2026-10-30-tests-unitaires.md`.
+Plan d'application : `docs/superpowers/plans/2026-10-30-plan-tests-unitaires.md`.
+
 ## État et périmètre
 
 v0.2 lit de **vraies données** : les releases publiées sur GitHub (`GET /releases/latest`,
