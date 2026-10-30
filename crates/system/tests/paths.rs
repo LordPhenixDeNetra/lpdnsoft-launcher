@@ -5,7 +5,7 @@ use lpdnsoft_launcher_core::{AppSpec, AssetPattern, Packages};
 use lpdnsoft_launcher_system::{
     exe_from_display_icon, installed_path, linux_path, macos_path, windows_candidates,
 };
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 fn app(id: &str, name: &str) -> AppSpec {
     AppSpec {
@@ -55,10 +55,13 @@ fn does_not_take_a_path_comma_for_an_icon_index() {
 
 #[test]
 fn prefers_the_layout_a_real_wix_msi_creates() {
-    let candidates = windows_candidates("aNkou", "ankou", Path::new(r"C:\Program Files"));
+    // Le chemin attendu est construit par `join`, jamais écrit à la main : sur Unix le
+    // séparateur n'est pas `\`, et un littéral Windows ferait échouer ce test hors Windows.
+    let program_files = Path::new("Program Files");
+    let candidates = windows_candidates("aNkou", "ankou", program_files);
     assert_eq!(
         candidates.first(),
-        Some(&PathBuf::from(r"C:\Program Files\aNkou\ankou.exe")),
+        Some(&program_files.join("aNkou").join("ankou.exe")),
         "c'est ce que produit aNkou 1.0.0 : dossier du nom, exécutable de l'identifiant"
     );
     assert_eq!(candidates.len(), 3);
