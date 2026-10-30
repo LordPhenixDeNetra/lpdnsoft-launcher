@@ -31,6 +31,7 @@ fn release(tag: &str) -> Release {
         }),
         assets: Vec::new(),
         notes_url: "https://example.test/notes".into(),
+        notes: None,
     }
 }
 
@@ -130,8 +131,6 @@ fn nothing_else_is_available_yet() {
     let pending = [
         Request::UpdateAll,
         Request::ChooseVersion("ankou".into()),
-        Request::Notes("ankou".into()),
-        Request::AllVersions("ankou".into()),
         Request::Hide("ankou".into()),
     ];
     for request in &pending {
@@ -156,4 +155,27 @@ fn a_version_is_never_compared_without_both_sides() {
         None
     ));
     assert!(!available(&unknown, &Request::Update("ankou".into()), None));
+}
+
+#[test]
+fn notes_and_history_need_a_published_release() {
+    let published = row(Some("1.0.0"), Some("v1.0.1"));
+    for request in [
+        Request::Notes("ankou".into()),
+        Request::AllVersions("ankou".into()),
+    ] {
+        assert!(
+            available(&published, &request, None),
+            "{request:?} devrait être disponible dès qu'une release est publiée"
+        );
+    }
+
+    // Ligne installée mais sans release : rien à montrer, donc rien d'actif.
+    let orphan = Row::new(app(None), Some(Version::new(1, 0, 0)), None);
+    for request in [
+        Request::Notes("ankou".into()),
+        Request::AllVersions("ankou".into()),
+    ] {
+        assert!(!available(&orphan, &request, None), "{request:?}");
+    }
 }

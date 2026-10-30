@@ -52,6 +52,8 @@ impl eframe::App for App {
                 Request::Refresh => self.screen.mark_checking(),
                 Request::Website(id) | Request::Repository(id) => self.open(id.as_str(), &request),
                 Request::Open(id) => self.launch(id.as_str()),
+                Request::Notes(id) => self.screen.open_notes(id),
+                Request::AllVersions(id) => self.screen.open_history(id),
                 // Vérification et installation : le pont s'en occupe. Les autres actions
                 // n'existent pas encore, l'interface les désactive.
                 _ => {}

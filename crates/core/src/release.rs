@@ -49,6 +49,12 @@ pub struct Release {
     pub assets: Vec<Asset>,
     /// Page des notes de version.
     pub notes_url: String,
+    /// Texte des notes, tel que l'auteur l'a écrit. `None` quand il n'y en a pas.
+    ///
+    /// Le champ est facultatif à la lecture : les caches écrits avant son ajout restent
+    /// valables (ADR 0003).
+    #[serde(default)]
+    pub notes: Option<String>,
 }
 
 impl Release {
@@ -64,7 +70,17 @@ impl Release {
             published,
             assets,
             notes_url: notes_url.into(),
+            notes: None,
         })
+    }
+
+    /// Notes nettoyées : une chaîne vide ou faite d'espaces vaut « pas de notes ».
+    pub fn with_notes(mut self, notes: Option<impl Into<String>>) -> Self {
+        self.notes = notes
+            .map(Into::into)
+            .map(|text| text.trim().to_owned())
+            .filter(|text| !text.is_empty());
+        self
     }
 
     /// Release d'une application, construite à partir de son étiquette.

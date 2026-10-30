@@ -119,3 +119,82 @@ fn a_new_check_clears_the_notice() {
     screen.apply(Update::Checking);
     assert!(screen.notice.is_none());
 }
+
+#[test]
+fn the_notes_open_without_any_request() {
+    let mut release = Release::new("v1.0.1", None, Vec::new(), "https://example.test")
+        .unwrap()
+        .with_notes(Some("## Corrigé\n\n- la reprise après coupure"));
+    release.notes = release.notes.take();
+    let rows = vec![Row::new(app("a", "A"), None, Some(release))];
+    let mut screen = screen(rows);
+    screen.open_notes("a");
+
+    let detail = screen.detail.as_ref().unwrap();
+    assert_eq!(detail.id, "a");
+    assert!(detail.title.contains("1.0.1"), "{}", detail.title);
+    assert_eq!(detail.entries.len(), 1);
+    assert!(
+        detail.entries[0]
+            .notes
+            .as_deref()
+            .unwrap()
+            .contains("reprise")
+    );
+    assert!(
+        screen.outbox.is_empty(),
+        "les notes sont déjà en mémoire : aucune requête"
+    );
+}
+
+#[test]
+fn the_history_fills_the_open_window() {
+    let rows = vec![row("a", "A", None, "v1.0.1")];
+    let mut screen = screen(rows);
+    screen.open_history("a");
+    assert!(screen.detail.as_ref().unwrap().loading);
+
+    let older = Release::new("v1.0.0", None, Vec::new(), "https://example.test").unwrap();
+    let newest = Release::new("v1.0.1", None, Vec::new(), "https://example.test").unwrap();
+    screen.apply(Update::Versions {
+        app: "a".into(),
+        releases: vec![newest, older],
+    });
+
+    let detail = screen.detail.as_ref().unwrap();
+    assert!(!detail.loading);
+    assert_eq!(detail.entries.len(), 2);
+    assert_eq!(detail.entries[0].version, "1.0.1");
+    assert_eq!(detail.entries[1].version, "1.0.0");
+}
+
+#[test]
+fn a_failed_history_shows_the_reason_in_the_window() {
+    let rows = vec![row("a", "A", None, "v1.0.1")];
+    let mut screen = screen(rows);
+    screen.open_history("a");
+    screen.apply(Update::VersionsFailed {
+        app: "a".into(),
+        detail: "quota atteint".into(),
+    });
+    let detail = screen.detail.as_ref().unwrap();
+    assert!(!detail.loading);
+    assert_eq!(detail.error.as_deref(), Some("quota atteint"));
+    assert!(detail.entries.is_empty(), "aucune version inventée");
+}
+
+#[test]
+fn a_history_for_another_application_is_ignored() {
+    let rows = vec![row("a", "A", None, "v1.0.1")];
+    let mut screen = screen(rows);
+    screen.open_history("a");
+    screen.apply(Update::VersionsFailed {
+        app: "autre".into(),
+        detail: "hors sujet".into(),
+    });
+    let detail = screen.detail.as_ref().unwrap();
+    assert!(
+        detail.loading,
+        "la fenêtre ouverte ne se remplit pas d'une réponse étrangère"
+    );
+}
