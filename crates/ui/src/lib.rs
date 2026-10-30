@@ -1,11 +1,15 @@
-//! Interface du launcher LPDNSoft : catalogue affiché en liste, thème commun.
+//! Interface du launcher LPDNSoft : catalogue réel, thème commun.
 
 mod app;
-pub mod fixture;
+pub mod bridge;
 pub mod screen;
 
 pub use app::run;
 use lpdnsoft_i18n::{LanguageIdentifier, Localizer, Resource, langid};
+use lpdnsoft_launcher_core::Manifest;
+
+/// Manifeste embarqué : la liste des applications de la suite (ADR 0002).
+const APPS: &str = include_str!("../../../apps.json");
 
 #[derive(Debug, thiserror::Error)]
 pub enum UiError {
@@ -13,6 +17,8 @@ pub enum UiError {
     Display(String),
     #[error("{0}")]
     I18n(#[from] lpdnsoft_i18n::I18nError),
+    #[error("manifeste d'applications invalide : {0}")]
+    Manifest(String),
 }
 
 /// Traductions embarquées ; `lang` (`"en"`, `"fr"`) sinon la langue du système, repli `en`.
@@ -36,4 +42,9 @@ pub fn localizer(lang: Option<&str>) -> Result<Localizer, UiError> {
     };
     loc.negotiate(&requested);
     Ok(loc)
+}
+
+/// Manifeste des applications, vérifié avant usage.
+pub fn manifest() -> Result<Manifest, UiError> {
+    Manifest::parse(APPS).map_err(|e| UiError::Manifest(e.to_string()))
 }

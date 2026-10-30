@@ -1,17 +1,22 @@
-//! Assemblage : fenêtre eframe et écran principal.
+//! Assemblage : fenêtre eframe, pont vers GitHub et le registre.
 
 use crate::UiError;
+use crate::bridge::{Bridge, Wake};
 use crate::localizer;
-use crate::screen::Screen;
+use crate::manifest;
+use crate::screen::{Request, Screen};
 use lpdnsoft_i18n::t;
+use std::sync::Arc;
 
 struct App {
     screen: Screen,
+    bridge: Bridge,
 }
 
 /// Lance la fenêtre ; `lang` (`--lang`) l'emporte sur la langue du système.
 pub fn run(lang: Option<String>) -> Result<(), UiError> {
     let loc = localizer(lang.as_deref())?;
+    let apps: Vec<_> = manifest()?.visible().cloned().collect();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1240.0, 720.0])
@@ -19,6 +24,7 @@ pub fn run(lang: Option<String>) -> Result<(), UiError> {
             .with_title(t!(&loc, "app-title")),
         ..eframe::NativeOptions::default()
     };
+    let screen = Screen::new(loc);
     eframe::run_native(
         "lpdnsoft-launcher",
         options,
@@ -26,16 +32,28 @@ pub fn run(lang: Option<String>) -> Result<(), UiError> {
             lpdnsoft_ui::install(&cc.egui_ctx);
             // La référence visuelle est sombre (ADR 0001) ; le thème commun gère les deux.
             cc.egui_ctx.set_theme(egui::Theme::Dark);
-            Ok(Box::new(App {
-                screen: Screen::new(loc),
-            }))
+            let ctx = cc.egui_ctx.clone();
+            let wake: Wake = Arc::new(move || ctx.request_repaint());
+            let bridge = Bridge::spawn(apps, wake);
+            Ok(Box::new(App { screen, bridge }))
         }),
     )
     .map_err(|e| UiError::Display(e.to_string()))
 }
 
 impl eframe::App for App {
-    fn logic(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {}
+    fn logic(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        for update in self.bridge.try_iter() {
+            self.screen.apply(update);
+        }
+        let requests = std::mem::take(&mut self.screen.outbox);
+        for request in requests {
+            if request == Request::Refresh {
+                self.screen.mark_checking();
+                self.bridge.refresh();
+            }
+        }
+    }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default()
