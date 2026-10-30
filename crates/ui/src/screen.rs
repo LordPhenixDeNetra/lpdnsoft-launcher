@@ -5,8 +5,10 @@ use egui::{
     Stroke, TextEdit, Ui, vec2,
 };
 use lpdnsoft_i18n::{Localizer, t};
-use lpdnsoft_launcher_core::{Catalog, Platform, Row, State};
+use lpdnsoft_launcher_core::{AppSpec, Catalog, Platform, Row, State};
 use lpdnsoft_ui::{Tone, status_color};
+
+use crate::links;
 
 /// Ce que l'écran demande au reste du programme.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,6 +50,8 @@ pub struct Screen {
     pub query: String,
     pub outbox: Vec<Request>,
     pub check: Check,
+    /// Échec d'une action immédiate (navigateur indisponible), effacé à la passe suivante.
+    pub notice: Option<String>,
 }
 
 impl Screen {
@@ -59,10 +63,12 @@ impl Screen {
             query: String::new(),
             outbox: Vec::new(),
             check: Check::Never,
+            notice: None,
         }
     }
 
     pub fn apply(&mut self, update: Update) {
+        self.notice = None;
         match update {
             Update::Checking => self.check = Check::Running,
             Update::Catalog(rows) => {
@@ -210,8 +216,16 @@ impl Screen {
         ui.label(RichText::new(&row.app.author).small());
 
         let (label, request) = action_of(&self.loc, row, state);
+        let enabled = links::available(&row.app, &request);
+        let hint = t!(&self.loc, "ui-unavailable");
         ui.horizontal(|ui| {
-            if ui.add(Button::new(RichText::new(label).strong())).clicked() {
+            let response = ui.add_enabled(enabled, Button::new(RichText::new(label).strong()));
+            let response = if enabled {
+                response
+            } else {
+                response.on_disabled_hover_text(hint)
+            };
+            if response.clicked() {
                 self.outbox.push(request.clone());
             }
             ui.menu_button("...", |ui| self.menu_items(ui, row));
@@ -220,29 +234,32 @@ impl Screen {
 
     fn menu_items(&mut self, ui: &mut Ui, row: &Row) {
         let id = row.app.id.clone();
-        if ui.button(t!(&self.loc, "ui-menu-version")).clicked() {
-            self.outbox.push(Request::ChooseVersion(id.clone()));
-            ui.close();
-        }
-        if ui.button(t!(&self.loc, "ui-menu-notes")).clicked() {
-            self.outbox.push(Request::Notes(id.clone()));
-            ui.close();
-        }
-        if ui.button(t!(&self.loc, "ui-menu-website")).clicked() {
-            self.outbox.push(Request::Website(id.clone()));
-            ui.close();
-        }
-        if ui.button(t!(&self.loc, "ui-menu-repo")).clicked() {
-            self.outbox.push(Request::Repository(id.clone()));
-            ui.close();
-        }
-        if ui.button(t!(&self.loc, "ui-menu-all-versions")).clicked() {
-            self.outbox.push(Request::AllVersions(id.clone()));
-            ui.close();
-        }
-        if ui.button(t!(&self.loc, "ui-menu-hide")).clicked() {
-            self.outbox.push(Request::Hide(id));
-            ui.close();
+        let hint = t!(&self.loc, "ui-unavailable");
+        let entries = [
+            (
+                t!(&self.loc, "ui-menu-version"),
+                Request::ChooseVersion(id.clone()),
+            ),
+            (t!(&self.loc, "ui-menu-notes"), Request::Notes(id.clone())),
+            (
+                t!(&self.loc, "ui-menu-website"),
+                Request::Website(id.clone()),
+            ),
+            (
+                t!(&self.loc, "ui-menu-repo"),
+                Request::Repository(id.clone()),
+            ),
+            (
+                t!(&self.loc, "ui-menu-all-versions"),
+                Request::AllVersions(id.clone()),
+            ),
+            (t!(&self.loc, "ui-menu-hide"), Request::Hide(id.clone())),
+        ];
+        for (label, request) in entries {
+            if let Some(chosen) = menu_entry(ui, label, request, &row.app, &hint) {
+                self.outbox.push(chosen);
+                ui.close();
+            }
         }
     }
 
@@ -264,6 +281,14 @@ impl Screen {
                 label = label.color(color);
             }
             ui.label(label);
+            if let Some(notice) = &self.notice {
+                ui.add_space(12.0);
+                ui.label(
+                    RichText::new(notice)
+                        .size(11.0)
+                        .color(status_color(Tone::Alert)),
+                );
+            }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.label(
                     RichText::new(concat!("v", env!("CARGO_PKG_VERSION")))
@@ -300,6 +325,24 @@ fn action_of(loc: &Localizer, row: &Row, state: State) -> (String, Request) {
         State::UpdateAvailable { .. } => (t!(loc, "ui-update"), Request::Update(id)),
         State::UpToDate { .. } | State::Unknown => (t!(loc, "ui-open"), Request::Open(id)),
     }
+}
+
+/// Entrée de menu : désactivée avec une infobulle quand l'action n'existe pas encore.
+fn menu_entry(
+    ui: &mut Ui,
+    label: String,
+    request: Request,
+    app: &AppSpec,
+    hint: &str,
+) -> Option<Request> {
+    let enabled = links::available(app, &request);
+    let response = ui.add_enabled(enabled, Button::new(label).frame(false));
+    let response = if enabled {
+        response
+    } else {
+        response.on_disabled_hover_text(hint)
+    };
+    response.clicked().then_some(request)
 }
 
 /// Pastille d'état : cadre fin de la couleur de l'état, fond très clair.
