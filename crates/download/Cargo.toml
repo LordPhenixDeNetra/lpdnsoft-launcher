@@ -1,0 +1,20 @@
+[package]
+name = "lpdnsoft-launcher-download"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Téléchargement vérifié des paquets, pour le launcher LPDNSoft"
+
+[lints]
+workspace = true
+
+[dependencies]
+reqwest = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { workspace = true }
