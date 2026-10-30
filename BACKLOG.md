@@ -40,14 +40,15 @@ Règles de tenue :
 
 ## En cours
 
-*Aucune.* Les PR #9 à #14 sont fusionnées.
+| Tâche | État | Où |
+|---|---|---|
+| **P5 — Toutes les versions et notes de version** | terminée sur branche : notes lues dans la release (aucune requête), historique chargé à la demande, fenêtre de détail, 10 tests | `crates/core`, `crates/github`, `crates/ui` |
 
 ## À faire
 
 | Priorité | Tâche | Effort | Prérequis |
 |---|---|---|---|
 | **P3 fin** | Vérifier l'installation réelle sur Windows et macOS (Linux est fait) | ~1 h | un poste Windows élevable et un Mac |
-| **P5** | Toutes les versions et notes de version | ~4 h | conserver les anciennes releases |
 | **P6** | `pull_request_template.md` et `CONTRIBUTING.md`, dans les trois dépôts | ~30 min | — |
 | **P7** | Release du launcher : paquets, `SHA256SUMS`, publication | 1-2 j | P3, et la signature si certificats |
 
@@ -88,3 +89,4 @@ d'installation devront le dire.
 | 2026-10-30 | 0.4 : installation — plan par système, élévation `pkexec`/UAC/`osascript`, exécution, ADR 0005 |
 | 2026-10-30 | 0.4 : ouverture de l'application installée, avec le chemin résolu par système |
 | 2026-10-30 | PR #9 à #14 fusionnées : le backlog passe P1 à P4 en **Fait** |
+| 2026-10-30 | 0.4 : notes de version lues dans la release, historique chargé à la demande |

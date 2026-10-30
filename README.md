@@ -26,10 +26,11 @@ Ce qui marche :
 - **Actions honnêtes** : ce qui n'existe pas est désactivé avec une infobulle ; « Site web »
   et « Dépôt GitHub » ouvrent le navigateur ;
 - **Pied de page honnête** : jamais vérifié / en cours / vérifié / données en cache / échec ;
+- **Notes et historique** : le texte de la version publiée s'ouvre sans requête (il est dans la release), l'historique se charge à la demande, une requête par application ;
 - **Ouvrir l'application installée** : chemin trouvé dans le registre (Windows), `/usr/bin` (Linux) ou `/Applications` (macOS), puis lancée ;
 - **Installation branchée** : `Installer` et `Mettre à jour` téléchargent le paquet, vérifient
   son empreinte, l'installent avec l'élévation du système, et affichent chaque étape ;
-- 111 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
+- 121 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
 
 Ce qui n'existe pas encore :
 
