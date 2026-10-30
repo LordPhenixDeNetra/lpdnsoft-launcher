@@ -4,7 +4,13 @@ on:
   push:
   pull_request:
 
+# Une seule exécution par référence : un correctif poussé annule la précédente.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Les mêmes contrôles qu'en local, sur les trois systèmes : cargo xtask ci.
   ci:
     strategy:
       fail-fast: false
@@ -34,3 +40,58 @@ jobs:
           tool: cargo-deny
       - run: cargo xtask ci
         working-directory: lpdnsoft-launcher
+
+  # La version minimale annoncée dans `rust-version` doit vraiment compiler le workspace.
+  # Sans ce job, la promesse du manifeste n'est jamais vérifiée.
+  msrv:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: lpdnsoft-launcher
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/lpdnsoft-libs
+          path: lpdnsoft-libs
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.95"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lpdnsoft-launcher
+          key: msrv
+      - run: cargo check --workspace --all-targets --locked
+        working-directory: lpdnsoft-launcher
+
+  # Preuve que le binaire se construit sur les trois systèmes, et artefact à essayer
+  # sans compiler soi-même. Non signé : ce n'est pas une version distribuée.
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Chemins longs (Windows)
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          path: lpdnsoft-launcher
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/lpdnsoft-libs
+          path: lpdnsoft-libs
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: lpdnsoft-launcher
+      - run: cargo build --release -p lpdnsoft-launcher --locked
+        working-directory: lpdnsoft-launcher
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lpdnsoft-launcher-${{ matrix.os }}
+          path: |
+            lpdnsoft-launcher/target/release/lpdnsoft-launcher
+            lpdnsoft-launcher/target/release/lpdnsoft-launcher.exe
+          if-no-files-found: error
