@@ -5,23 +5,27 @@ installée et la dernière publiée, et les installe ou les met à jour depuis l
 
 Référence visuelle et fonctionnelle : le launcher ArtCraft (cité par la spec d'aNkou §1).
 
-![Le launcher en v0.1, sur données de démonstration](docs/capture.png)
+![Le launcher en v0.2, sur données réelles](docs/capture.png)
 
-## État — v0.1 (socle)
+## État — v0.2 (données réelles)
 
-Ce qui marche aujourd'hui :
+Ce qui marche :
 
-- **Catalogue typé** : applications, plateformes, motifs de nom d'asset, releases, états ;
-- **Interface complète** : liste, pastilles d'état, versions, dates, recherche, actions et menu ;
-- **i18n** anglais/français, clés vérifiées à la compilation ;
-- 20 tests, `fmt` et `clippy -D warnings` propres.
+- **Vraies releases** : une requête `GET /releases/latest` par application, sans intermédiaire
+  ni jeton — version disponible et date de publication viennent de GitHub ;
+- **Vraie version installée** sous Windows, lue dans les clés de désinstallation du registre ;
+- **États calculés** : à jour, mise à jour disponible, non installée, version inconnue ;
+- **Interface complète** : pastilles d'état, recherche, menu par application, deux langues ;
+- **Pied de page honnête** : jamais vérifié / vérification en cours / vérifié / échec motivé ;
+- 26 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
 
-Ce qui n'est pas encore là, volontairement :
+Ce qui n'existe pas encore :
 
-- aucun accès réseau : le catalogue vient de `crates/ui/src/fixture.rs` ;
-- aucun téléchargement, aucune vérification `SHA256SUMS`, aucune installation ;
-- aucune détection des versions réellement installées ;
-- les boutons remplissent une file de `Request`, que rien ne consomme encore.
+- aucun téléchargement, aucune vérification `SHA256SUMS`, aucune installation ni mise à jour ;
+- les boutons Installer / Mettre à jour / Ouvrir et le menu remplissent une file de `Request`
+  que rien ne consomme ;
+- aucune détection hors Windows, aucun cache disque : un lancement hors ligne n'affiche
+  d'abord qu'un échec motivé, puis les données de la passe précédente s'il y en a une.
 
 ## Compiler et lancer
 
