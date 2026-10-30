@@ -33,15 +33,14 @@ Règles de tenue :
 | Licence MIT seule, avec un test garde-fou | — | #5 | déclaration = fichiers livrés |
 | Actions honnêtes : boutons désactivés, liens actifs | — | #6 | 46 tests, refus du non-`https` |
 | **Cache `ETag` et disque, repli hors ligne** | **0.3** | **#7** | **55 tests, ADR 0003** |
+| Télécharger et vérifier `SHA256SUMS` (P1) | 0.4 | #9 | reprise `Range`, empreinte, publication atomique, 12 tests dont 5 sur serveur HTTP local |
+| Détection Linux et macOS (P2) | 0.4 | #10 | `dpkg-query`, `rpm -q`, `pkgutil`, noms de paquet au manifeste, 15 tests |
+| **Installer et mettre à jour (P3)** | **0.4** | **#11, #12, #13** | **plan, élévation, exécution, branchement UI, installation réelle vérifiée sous Linux** |
+| **Ouvrir l'application installée (P4)** | **0.4** | **#14** | **chemin par système, bouton principal et entrée de menu, 8 tests** |
 
 ## En cours
 
-| Tâche | État | Où |
-|---|---|---|
-| **P1 — Télécharger et vérifier `SHA256SUMS`** | terminée sur branche, revue en attente : parseur d'empreintes, calcul par blocs, reprise par `Range`, refus d'un fichier de mauvaise taille ou de mauvaise empreinte, 12 tests dont 5 contre un serveur HTTP local | `crates/download`, ADR 0004 |
-| **P2 — Détection Linux et macOS** | terminée sur branche, revue en attente : `dpkg-query`, `rpm -q`, `pkgutil`, noms de paquet dans le manifeste, 15 tests sans machine cible | `crates/system`, spécification de détection |
-| **P3 — Installer et mettre à jour** | **étapes 1 à 4 faites**, étape 5 **partielle** : installation réelle vérifiée sous Linux (Ubuntu 26.04 en WSL, aNkou 1.0.1 installé, service activé, version relue, puis purgé) ; Windows et macOS restent à faire | `crates/install`, `crates/ui`, ADR 0005, `docs/runbooks/verification-installation.md` |
-| **P4 — Ouvrir l'application installée** | terminée sur branche : registre Windows (`DisplayIcon`, `InstallLocation`, puis conventions), `/usr/bin`, `/Applications` ; bouton principal et entrée de menu, 8 tests | `crates/system`, `crates/ui` |
+*Aucune.* Les PR #9 à #14 sont fusionnées.
 
 ## À faire
 
@@ -88,3 +87,4 @@ d'installation devront le dire.
 | 2026-10-30 | 0.4 : détection Linux (`dpkg-query`, `rpm -q`) et macOS (`pkgutil`), noms de paquet dans le manifeste |
 | 2026-10-30 | 0.4 : installation — plan par système, élévation `pkexec`/UAC/`osascript`, exécution, ADR 0005 |
 | 2026-10-30 | 0.4 : ouverture de l'application installée, avec le chemin résolu par système |
+| 2026-10-30 | PR #9 à #14 fusionnées : le backlog passe P1 à P4 en **Fait** |
