@@ -1,7 +1,7 @@
 //! Tests du contrat public : lecture du JSON d'une release.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use lpdnsoft_launcher_core::{AppSpec, AssetPattern};
+use lpdnsoft_launcher_core::{AppSpec, AssetPattern, Packages};
 use lpdnsoft_launcher_github::parse_release;
 
 fn app() -> AppSpec {
@@ -13,6 +13,7 @@ fn app() -> AppSpec {
         repo: "LordPhenixDeNetra/ankou".into(),
         homepage: None,
         asset: AssetPattern::new("ankou-{version}-{os}-{arch}.{ext}"),
+        packages: Packages::default(),
         hidden: false,
     }
 }

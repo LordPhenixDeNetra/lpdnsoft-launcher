@@ -3,7 +3,7 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use lpdnsoft_launcher_core::{AppSpec, AssetPattern, Date, Release, Row, State, Version};
+use lpdnsoft_launcher_core::{AppSpec, AssetPattern, Date, Packages, Release, Row, State, Version};
 use lpdnsoft_launcher_ui::localizer;
 use lpdnsoft_launcher_ui::screen::{Check, Screen, Update};
 
@@ -16,6 +16,7 @@ fn app(id: &str, name: &str) -> AppSpec {
         repo: format!("LordPhenixDeNetra/{id}"),
         homepage: None,
         asset: AssetPattern::new(format!("{id}-{{version}}-{{os}}-{{arch}}.{{ext}}")),
+        packages: Packages::default(),
         hidden: false,
     }
 }

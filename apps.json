@@ -7,7 +7,12 @@
       "author": "LPDNSoft",
       "repo": "LordPhenixDeNetra/ankou",
       "homepage": "https://github.com/LordPhenixDeNetra/ankou",
-      "asset": "ankou-{version}-{os}-{arch}.{ext}"
+      "asset": "ankou-{version}-{os}-{arch}.{ext}",
+      "packages": {
+        "deb": "ankou",
+        "rpm": "ankou",
+        "pkg": "fr.lpdnsoft.ankou"
+      }
     },
     {
       "id": "lpdnsoft-launcher",

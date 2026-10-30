@@ -154,7 +154,7 @@ async fn check(apps: &[AppSpec], cache: &Cache) -> Update {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lpdnsoft_launcher_core::{AssetPattern, Date};
+    use lpdnsoft_launcher_core::{AssetPattern, Date, Packages};
 
     fn app(id: &str) -> AppSpec {
         AppSpec {
@@ -165,6 +165,7 @@ mod tests {
             repo: format!("LordPhenixDeNetra/{id}"),
             homepage: None,
             asset: AssetPattern::new(format!("{id}-{{version}}-{{os}}-{{arch}}.{{ext}}")),
+            packages: Packages::default(),
             hidden: false,
         }
     }
