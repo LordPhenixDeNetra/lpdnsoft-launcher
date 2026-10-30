@@ -141,14 +141,13 @@ jobs:
   macos:
     needs: prepare
     if: needs.prepare.outputs.release == 'true'
+    # Les deux architectures sont construites sur le même runner arm64, par compilation
+    # croisée. `macos-13` (Intel) n'a plus de runner : le job restait « queued »
+    # indéfiniment, bloquait la file `concurrency` et empêchait toute publication.
     strategy:
       matrix:
-        include:
-          - runner: macos-14
-            arch: aarch64
-          - runner: macos-13
-            arch: x86_64
-    runs-on: ${{ matrix.runner }}
+        arch: [aarch64, x86_64]
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
         with:
