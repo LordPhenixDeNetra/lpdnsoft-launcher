@@ -14,8 +14,9 @@ Launcher de la suite **LPDNSoft** (Rust, egui 0.36, Windows/Linux/macOS). Décis
   filtrage. **Aucune E/S, aucun réseau.**
 - `crates/github` — `lpdnsoft-launcher-github` : `GET /repos/<propriétaire>/<nom>/releases/latest`,
   une requête par application (ADR 0002).
-- `crates/system` — `lpdnsoft-launcher-system` : version installée, lue dans le registre de
-  désinstallation sous Windows ; rien hors Windows pour l'instant.
+- `crates/system` — `lpdnsoft-launcher-system` : version installée — registre Windows,
+  `dpkg-query`/`rpm -q` sur Linux, `pkgutil` sur macOS ; l'exécution passe par un trait
+  `Runner`, donc les séquences sont testables sans machine cible.
 - `crates/cache` — `lpdnsoft-launcher-cache` : dernière release connue et empreinte, un
   fichier par application, écriture atomique (ADR 0003).
 - `crates/download` — `lpdnsoft-launcher-download` : reprise par `Range`, vérification
@@ -25,6 +26,7 @@ Launcher de la suite **LPDNSoft** (Rust, egui 0.36, Windows/Linux/macOS). Décis
 - `apps/launcher` — `lpdnsoft-launcher` : arguments (`--lang en|fr`), journal, lancement.
 - `apps.json` — la liste des applications de la suite, embarquée et validée au démarrage.
 - `locales/{en,fr}/launcher.ftl` — traductions Fluent, embarquées à la compilation.
+- `BACKLOG.md` — le cahier des tâches : priorités, décisions en attente, tâches bloquées.
 - `xtask` — contrôles.
 
 ## Commande unique
@@ -78,15 +80,13 @@ Plan d'application : `docs/superpowers/plans/2026-10-30-plan-tests-unitaires.md`
 
 ## État et périmètre
 
-v0.3 lit de **vraies données** : les releases publiées sur GitHub (`GET /releases/latest`,
-une requête conditionnelle par application, soixante par heure sans authentification) et la
-version installée, lue dans le registre de désinstallation sous Windows. La liste des
-applications est `apps.json`, embarqué et validé au démarrage. Chaque réponse est mise en
-cache avec son empreinte : un 304 ne coûte rien au quota, et une panne réseau retombe sur la
-dernière réponse connue, annoncée comme telle (ADR 0003).
+v0.4 lit de **vraies données** : les releases publiées sur GitHub (`GET /releases/latest`,
+une requête conditionnelle par application), la version installée (registre Windows,
+`dpkg-query`/`rpm -q` sur Linux, `pkgutil` sur macOS), le tout mis en cache avec son empreinte
+(ADR 0003). Le téléchargement vérifié existe (`crates/download`, ADR 0004) mais n'est pas
+encore branché.
 
-Ce qui n'existe pas encore : le téléchargement vérifié est écrit (`crates/download`) mais
-n'est branché ni à l'interface ni à une installation ; il n'existe donc aucune installation
-ni mise à jour. Ces actions sont **désactivées** dans l'interface, avec une infobulle qui
-l'annonce ; seuls « Site web » et « Dépôt GitHub » agissent, en ouvrant le navigateur.
-La détection des versions installées n'est pas écrite hors Windows.
+Ce qui n'existe pas encore : aucune installation ni mise à jour. Ces actions sont
+**désactivées** dans l'interface, avec une infobulle qui l'annonce ; seuls « Site web » et
+« Dépôt GitHub » agissent, en ouvrant le navigateur. Une application installée hors
+gestionnaire de paquets s'affiche « version inconnue ».
