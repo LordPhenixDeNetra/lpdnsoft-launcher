@@ -15,7 +15,8 @@ Ce qui marche :
 
 - **Vraies releases** : une requête `GET /releases/latest` par application, sans intermédiaire
   ni jeton — version disponible et date de publication viennent de GitHub ;
-- **Vraie version installée** sous Windows, lue dans les clés de désinstallation du registre ;
+- **Vraie version installée** : registre de désinstallation sous Windows, `dpkg-query`/`rpm -q`
+  sur Linux, `pkgutil` sur macOS ; le nom du paquet vient du manifeste ;
 - **Cache conditionnel** : l'empreinte part dans `If-None-Match`, un 304 ne coûte rien au
   quota, et une panne réseau retombe sur la dernière réponse connue ;
 - **Téléchargement vérifié** (`crates/download`) : reprise par `Range`, empreinte `SHA-256`
@@ -25,12 +26,13 @@ Ce qui marche :
 - **Actions honnêtes** : ce qui n'existe pas est désactivé avec une infobulle ; « Site web »
   et « Dépôt GitHub » ouvrent le navigateur ;
 - **Pied de page honnête** : jamais vérifié / en cours / vérifié / données en cache / échec ;
-- 67 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
+- 80 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
 
 Ce qui n'existe pas encore :
 
 - aucune installation ni mise à jour : le téléchargement vérifié n'est pas encore branché ;
-- aucune détection hors Windows : sur Linux et macOS, toute application paraît non installée.
+- une application installée hors gestionnaire de paquets (archive, binaire copié, Flatpak)
+  reste invisible : l'interface affiche alors « version inconnue ».
 
 ## Compiler et lancer
 

@@ -2,7 +2,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use lpdnsoft_launcher_core::{
-    AppSpec, AssetPattern, Catalog, Platform, Release, Row, State, Version,
+    AppSpec, AssetPattern, Catalog, Packages, Platform, Release, Row, State, Version,
 };
 
 fn app(id: &str, name: &str, tagline: &str) -> AppSpec {
@@ -14,6 +14,7 @@ fn app(id: &str, name: &str, tagline: &str) -> AppSpec {
         repo: format!("LordPhenixDeNetra/{id}"),
         homepage: None,
         asset: AssetPattern::new(format!("{id}-{{version}}-{{os}}-{{arch}}.{{ext}}")),
+        packages: Packages::default(),
         hidden: false,
     }
 }

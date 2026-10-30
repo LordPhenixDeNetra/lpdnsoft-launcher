@@ -111,6 +111,21 @@ impl AssetPattern {
     }
 }
 
+/// Noms sous lesquels le paquet est enregistré chez chaque gestionnaire.
+///
+/// Facultatif : un champ absent retombe sur l'identifiant de l'application. C'est ce qui
+/// permet à un paquet macOS de porter un identifiant inverse (`fr.lpdnsoft.ankou`) alors que
+/// l'application s'appelle `ankou`.
+#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+pub struct Packages {
+    #[serde(default)]
+    pub deb: Option<String>,
+    #[serde(default)]
+    pub rpm: Option<String>,
+    #[serde(default)]
+    pub pkg: Option<String>,
+}
+
 /// Une application de la suite, telle que décrite dans `apps.json`.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct AppSpec {
@@ -126,6 +141,9 @@ pub struct AppSpec {
     pub homepage: Option<String>,
     /// Motif du paquet à télécharger pour cette application.
     pub asset: AssetPattern,
+    /// Noms de paquet par gestionnaire ; repli sur `id`.
+    #[serde(default)]
+    pub packages: Packages,
     /// Masquée dans la liste, sans être retirée du manifeste.
     #[serde(default)]
     pub hidden: bool,
@@ -138,6 +156,21 @@ impl AppSpec {
 
     pub fn notes_url(&self) -> String {
         format!("{}/releases", self.repo_url())
+    }
+
+    /// Nom du paquet Debian, ou l'identifiant s'il n'est pas précisé.
+    pub fn deb_package(&self) -> &str {
+        self.packages.deb.as_deref().unwrap_or(&self.id)
+    }
+
+    /// Nom du paquet RPM, ou l'identifiant s'il n'est pas précisé.
+    pub fn rpm_package(&self) -> &str {
+        self.packages.rpm.as_deref().unwrap_or(&self.id)
+    }
+
+    /// Identifiant du paquet macOS (`pkgutil`), ou l'identifiant s'il n'est pas précisé.
+    pub fn pkg_id(&self) -> &str {
+        self.packages.pkg.as_deref().unwrap_or(&self.id)
     }
 
     /// Nom du paquet de cette version pour cette plateforme.

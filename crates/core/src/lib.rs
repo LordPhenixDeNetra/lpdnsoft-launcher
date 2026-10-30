@@ -8,7 +8,7 @@ mod catalog;
 mod release;
 mod version;
 
-pub use app::{AppSpec, Arch, AssetPattern, Manifest, ManifestError, Os, Platform};
+pub use app::{AppSpec, Arch, AssetPattern, Manifest, ManifestError, Os, Packages, Platform};
 pub use catalog::{Catalog, Row, State};
 pub use release::{Asset, Date, Release, size_text};
 pub use version::{Version, VersionError};

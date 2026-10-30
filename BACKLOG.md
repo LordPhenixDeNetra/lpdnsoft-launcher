@@ -39,12 +39,12 @@ Règles de tenue :
 | Tâche | État | Où |
 |---|---|---|
 | **P1 — Télécharger et vérifier `SHA256SUMS`** | terminée sur branche, revue en attente : parseur d'empreintes, calcul par blocs, reprise par `Range`, refus d'un fichier de mauvaise taille ou de mauvaise empreinte, 12 tests dont 5 contre un serveur HTTP local | `crates/download`, ADR 0004 |
+| **P2 — Détection Linux et macOS** | terminée sur branche, revue en attente : `dpkg-query`, `rpm -q`, `pkgutil`, noms de paquet dans le manifeste, 15 tests sans machine cible | `crates/system`, spécification de détection |
 
 ## À faire
 
 | Priorité | Tâche | Effort | Prérequis |
 |---|---|---|---|
-| **P2** | Détection des versions installées sous Linux (`dpkg-query`, `rpm -q`) et macOS (`pkgutil`) | ~3 h | — |
 | **P3** | Installer et mettre à jour : MSI, `.deb`/`.rpm`, `.pkg`, élévation | 2-3 j | **ADR 0005** (modèle d'élévation), P1 |
 | **P4** | Ouvrir l'application installée | ~2 h | chemin d'installation lu par OS |
 | **P5** | Toutes les versions et notes de version | ~4 h | conserver les anciennes releases |
@@ -84,3 +84,4 @@ d'installation devront le dire.
 | 2026-10-30 | Stratégie de tests et verrous CI ; tests réorganisés en unitaires et intégration |
 | 2026-10-30 | 0.3 : cache conditionnel, repli hors ligne annoncé comme tel |
 | 2026-10-30 | 0.4 : téléchargement vérifié (`Range`, `SHA256SUMS`, publication atomique), ADR 0004 |
+| 2026-10-30 | 0.4 : détection Linux (`dpkg-query`, `rpm -q`) et macOS (`pkgutil`), noms de paquet dans le manifeste |

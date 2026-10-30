@@ -1,7 +1,7 @@
 //! Tests du contrat public : quelles actions mènent quelque part, et vers quoi.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use lpdnsoft_launcher_core::{AppSpec, AssetPattern};
+use lpdnsoft_launcher_core::{AppSpec, AssetPattern, Packages};
 use lpdnsoft_launcher_ui::links::{available, url_for};
 use lpdnsoft_launcher_ui::screen::Request;
 
@@ -14,6 +14,7 @@ fn app(homepage: Option<&str>) -> AppSpec {
         repo: "LordPhenixDeNetra/ankou".into(),
         homepage: homepage.map(str::to_owned),
         asset: AssetPattern::new("ankou-{version}-{os}-{arch}.{ext}"),
+        packages: Packages::default(),
         hidden: false,
     }
 }
