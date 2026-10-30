@@ -57,12 +57,19 @@ impl Bridge {
                 let Ok(request) = inbox.recv() else {
                     return;
                 };
-                let id = match &request {
-                    Request::Install(id) | Request::Update(id) => id.clone(),
-                    _ => continue,
-                };
-                if let Some(row) = rows.iter().find(|row| row.app.id == id).cloned() {
-                    runtime.block_on(install(&row, &cache, &tx, &wake));
+                match &request {
+                    Request::Install(id) | Request::Update(id) => {
+                        if let Some(row) = rows.iter().find(|row| row.app.id == *id).cloned() {
+                            runtime.block_on(install(&row, &cache, &tx, &wake));
+                        }
+                    }
+                    // Une requête, seulement à l'ouverture de la fenêtre d'historique.
+                    Request::AllVersions(id) => {
+                        if let Some(app) = apps.iter().find(|app| app.id == *id).cloned() {
+                            runtime.block_on(history(&app, &tx, &wake));
+                        }
+                    }
+                    _ => {}
                 }
                 // La passe suivante montrera la version nouvellement installée.
             }
@@ -181,6 +188,28 @@ async fn check(apps: &[AppSpec], cache: &Cache) -> Update {
         }
     }
     update
+}
+
+/// Charge l'historique d'une application, à la demande.
+async fn history(app: &AppSpec, tx: &Sender<Update>, wake: &Wake) {
+    let update = match lpdnsoft_launcher_github::client() {
+        Ok(client) => match lpdnsoft_launcher_github::releases(&client, app).await {
+            Ok(releases) => Update::Versions {
+                app: app.id.clone(),
+                releases,
+            },
+            Err(error) => Update::VersionsFailed {
+                app: app.id.clone(),
+                detail: error.to_string(),
+            },
+        },
+        Err(error) => Update::VersionsFailed {
+            app: app.id.clone(),
+            detail: error.to_string(),
+        },
+    };
+    let _ = tx.send(update);
+    (wake)();
 }
 
 /// Télécharge, vérifie et installe la ligne ; chaque étape est poussée à l'écran.

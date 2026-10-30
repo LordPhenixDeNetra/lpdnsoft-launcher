@@ -30,6 +30,9 @@ pub fn available(row: &Row, request: &Request, openable: Option<&Path>) -> bool 
         }
         Request::Update(_) => matches!(row.state(), State::UpdateAvailable { .. }),
         Request::Open(_) => openable.is_some(),
+        // Les notes sont dans la release déjà chargée ; l'historique demande une requête,
+        // faite seulement à l'ouverture de la fenêtre.
+        Request::Notes(_) | Request::AllVersions(_) => row.available.is_some(),
         _ => url_for(&row.app, request).is_some(),
     }
 }

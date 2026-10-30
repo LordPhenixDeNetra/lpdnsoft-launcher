@@ -5,7 +5,7 @@ use egui::{
     Stroke, TextEdit, Ui, vec2,
 };
 use lpdnsoft_i18n::{Localizer, t};
-use lpdnsoft_launcher_core::{Catalog, Platform, Row, State};
+use lpdnsoft_launcher_core::{Catalog, Platform, Release, Row, State};
 use lpdnsoft_ui::{Tone, status_color};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -46,6 +46,25 @@ pub struct Job {
     pub total: Option<u64>,
 }
 
+/// Une version dans la fenêtre de détail.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DetailEntry {
+    pub version: String,
+    pub date: Option<String>,
+    pub notes: Option<String>,
+}
+
+/// Fenêtre de détail : notes de la version publiée, ou historique complet.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Detail {
+    /// Identifiant de l'application, pour rattacher la réponse du pont.
+    pub id: String,
+    pub title: String,
+    pub entries: Vec<DetailEntry>,
+    pub loading: bool,
+    pub error: Option<String>,
+}
+
 /// Ce que le pont renvoie à l'écran.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Update {
@@ -57,6 +76,16 @@ pub enum Update {
         openable: HashMap<String, PathBuf>,
     },
     Job(Job),
+    /// Historique chargé pour une application.
+    Versions {
+        app: String,
+        releases: Vec<Release>,
+    },
+    /// Historique impossible à charger ; la raison est affichée telle quelle.
+    VersionsFailed {
+        app: String,
+        detail: String,
+    },
     Failed(String),
 }
 
@@ -84,6 +113,8 @@ pub struct Screen {
     pub job: Option<Job>,
     /// Exécutables trouvés lors de la dernière vérification.
     pub openable: HashMap<String, PathBuf>,
+    /// Fenêtre de détail ouverte, s'il y en a une.
+    pub detail: Option<Detail>,
 }
 
 impl Screen {
@@ -98,6 +129,7 @@ impl Screen {
             notice: None,
             job: None,
             openable: HashMap::new(),
+            detail: None,
         }
     }
 
@@ -123,7 +155,132 @@ impl Screen {
                 };
             }
             Update::Job(job) => self.job = Some(job),
+            Update::Versions { app, releases } => {
+                if let Some(detail) = &mut self.detail
+                    && detail.id == app
+                {
+                    detail.loading = false;
+                    detail.entries = releases
+                        .into_iter()
+                        .map(|release| DetailEntry {
+                            version: release.version.to_string(),
+                            date: release.published.map(|date| date.short()),
+                            notes: release.notes,
+                        })
+                        .collect();
+                }
+            }
+            Update::VersionsFailed {
+                app,
+                detail: reason,
+            } => {
+                if let Some(detail) = &mut self.detail
+                    && detail.id == app
+                {
+                    detail.loading = false;
+                    detail.error = Some(reason);
+                }
+            }
             Update::Failed(detail) => self.check = Check::Failed(detail),
+        }
+    }
+
+    /// Ouvre la fenêtre sur les notes de la version publiée. Aucune requête : le texte est
+    /// déjà dans la release, donc dans le cache (ADR 0003).
+    pub fn open_notes(&mut self, id: &str) {
+        let Some(row) = self.catalog.get(id) else {
+            return;
+        };
+        let Some(release) = row.available.clone() else {
+            return;
+        };
+        self.detail = Some(Detail {
+            id: id.to_owned(),
+            title: format!("{} — {}", row.app.name, release.version),
+            entries: vec![DetailEntry {
+                version: release.version.to_string(),
+                date: release.published.map(|date| date.short()),
+                notes: release.notes.clone(),
+            }],
+            loading: false,
+            error: None,
+        });
+    }
+
+    /// Ouvre la fenêtre sur l'historique, encore vide ; le pont le remplit.
+    pub fn open_history(&mut self, id: &str) {
+        let Some(row) = self.catalog.get(id) else {
+            return;
+        };
+        let title = format!("{} — {}", row.app.name, t!(&self.loc, "ui-detail-history"));
+        self.detail = Some(Detail {
+            id: id.to_owned(),
+            title,
+            entries: Vec::new(),
+            loading: true,
+            error: None,
+        });
+    }
+
+    /// Fenêtre de détail : notes d'une version, ou historique complet.
+    fn detail_window(&mut self, ui: &mut Ui) {
+        let Some(detail) = self.detail.clone() else {
+            return;
+        };
+        let mut open = true;
+        egui::Window::new(&detail.title)
+            .open(&mut open)
+            .collapsible(false)
+            .default_width(560.0)
+            .max_height(460.0)
+            .show(ui.ctx(), |ui| {
+                egui::ScrollArea::vertical()
+                    .max_height(360.0)
+                    .show(ui, |ui| {
+                        if detail.loading {
+                            ui.label(t!(&self.loc, "ui-detail-loading"));
+                            return;
+                        }
+                        if let Some(error) = &detail.error {
+                            ui.label(
+                                RichText::new(t!(
+                                    &self.loc,
+                                    "ui-detail-failed",
+                                    detail = error.as_str()
+                                ))
+                                .color(status_color(Tone::Alert)),
+                            );
+                            return;
+                        }
+                        if detail.entries.is_empty() {
+                            ui.label(t!(&self.loc, "ui-detail-empty-history"));
+                            return;
+                        }
+                        for entry in &detail.entries {
+                            ui.horizontal(|ui| {
+                                ui.label(RichText::new(&entry.version).strong());
+                                if let Some(date) = &entry.date {
+                                    ui.label(RichText::new(date).size(11.0).weak());
+                                }
+                            });
+                            match &entry.notes {
+                                Some(notes) => {
+                                    ui.label(RichText::new(notes).size(12.0));
+                                }
+                                None => {
+                                    ui.label(
+                                        RichText::new(t!(&self.loc, "ui-detail-no-notes"))
+                                            .size(12.0)
+                                            .weak(),
+                                    );
+                                }
+                            }
+                            ui.add_space(10.0);
+                        }
+                    });
+            });
+        if !open {
+            self.detail = None;
         }
     }
 
@@ -136,6 +293,7 @@ impl Screen {
         ui.add_space(12.0);
         self.table(ui);
         self.job_line(ui);
+        self.detail_window(ui);
         self.footer(ui);
     }
 
