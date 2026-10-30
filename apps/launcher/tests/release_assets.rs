@@ -12,6 +12,7 @@ const APPS: &str = include_str!("../../../apps.json");
 const RELEASE: &str = include_str!("../../../.github/workflows/release.yml");
 const PLIST: &str = include_str!("../../../packaging/macos/Info.plist");
 const WXS: &str = include_str!("../../../packaging/windows/launcher.wxs");
+const MANIFEST: &str = include_str!("../Cargo.toml");
 
 fn launcher() -> lpdnsoft_launcher_core::AppSpec {
     Manifest::parse(APPS)
@@ -184,5 +185,33 @@ fn the_publish_job_works_outside_the_checkout() {
     assert!(
         RELEASE.contains("working-directory: ."),
         "le job de publication doit travailler à la racine"
+    );
+}
+
+#[test]
+fn the_packaging_assets_are_relative_to_the_crate() {
+    // `cargo-deb` et `cargo-generate-rpm` résolvent les actifs depuis `apps/launcher`, pas
+    // depuis la racine du dépôt. Écrits depuis la racine, ils ne trouvent rien et la
+    // publication échoue — c'est arrivé sur la première tentative.
+    assert!(
+        MANIFEST.contains("../../packaging/linux/lpdnsoft-launcher.desktop"),
+        "les actifs doivent être relatifs au crate : ../../packaging/…"
+    );
+    let crate_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let asset = crate_dir.join("../../packaging/linux/lpdnsoft-launcher.desktop");
+    assert!(
+        asset.is_file(),
+        "l'actif déclaré doit exister : {}",
+        asset.display()
+    );
+}
+
+#[test]
+fn the_windows_long_paths_step_runs_before_any_checkout() {
+    // Ce pas tourne avant le clone : sans dossier de travail explicite, PowerShell refuse
+    // de démarrer dans un dossier qui n'existe pas encore.
+    assert!(
+        RELEASE.contains("working-directory: ${{ github.workspace }}"),
+        "le pas « chemins longs » doit s'exécuter à la racine du runner"
     );
 }
