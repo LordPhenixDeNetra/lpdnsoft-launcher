@@ -1,0 +1,19 @@
+[package]
+name = "lpdnsoft-launcher-github"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Lecture des releases GitHub pour le launcher LPDNSoft"
+
+[lints]
+workspace = true
+
+[dependencies]
+lpdnsoft-launcher-core = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }

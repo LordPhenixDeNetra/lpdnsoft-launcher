@@ -1,0 +1,22 @@
+{
+  "apps": [
+    {
+      "id": "ankou",
+      "name": "aNkou",
+      "tagline": "Client VPN WireGuard",
+      "author": "LPDNSoft",
+      "repo": "LordPhenixDeNetra/ankou",
+      "homepage": "https://github.com/LordPhenixDeNetra/ankou",
+      "asset": "ankou-{version}-{os}-{arch}.{ext}"
+    },
+    {
+      "id": "lpdnsoft-launcher",
+      "name": "LPDNSoft Launcher",
+      "tagline": "Launcher de la suite",
+      "author": "LPDNSoft",
+      "repo": "LordPhenixDeNetra/lpdnsoft-launcher",
+      "homepage": "https://github.com/LordPhenixDeNetra/lpdnsoft-launcher",
+      "asset": "lpdnsoft-launcher-{version}-{os}-{arch}.{ext}"
+    }
+  ]
+}

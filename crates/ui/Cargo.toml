@@ -12,11 +12,14 @@ workspace = true
 
 [dependencies]
 lpdnsoft-launcher-core = { workspace = true }
+lpdnsoft-launcher-github = { workspace = true }
+lpdnsoft-launcher-system = { workspace = true }
 lpdnsoft-i18n = { workspace = true }
 lpdnsoft-ui = { workspace = true }
 eframe = { workspace = true }
 egui = { workspace = true }
 thiserror = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
 egui_kittest = { workspace = true }

@@ -1,16 +1,14 @@
 //! Écran principal : la liste des applications (référence visuelle : launcher ArtCraft).
 
-use crate::fixture;
 use egui::{
-    Align, Align2, Button, Color32, CornerRadius, FontId, Frame, Grid, Layout, RichText,
-    ScrollArea, Sense, Stroke, TextEdit, Ui, vec2,
+    Align, Align2, Button, Color32, CornerRadius, FontId, Frame, Grid, Layout, RichText, Sense,
+    Stroke, TextEdit, Ui, vec2,
 };
 use lpdnsoft_i18n::{Localizer, t};
 use lpdnsoft_launcher_core::{Catalog, Platform, Row, State};
 use lpdnsoft_ui::{Tone, status_color};
 
-/// Ce que l'écran demande au reste du programme. Rien n'est exécuté en v0.1 : le
-/// téléchargement et l'installation viendront derrière cette file (ADR 0001).
+/// Ce que l'écran demande au reste du programme.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     Refresh,
@@ -26,12 +24,30 @@ pub enum Request {
     Hide(String),
 }
 
+/// Ce que le pont renvoie à l'écran.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Update {
+    Checking,
+    Catalog(Vec<Row>),
+    Failed(String),
+}
+
+/// État de la dernière vérification, affiché en pied de page.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Check {
+    Never,
+    Running,
+    Done,
+    Failed(String),
+}
+
 pub struct Screen {
     pub loc: Localizer,
     pub platform: Platform,
     pub catalog: Catalog,
     pub query: String,
     pub outbox: Vec<Request>,
+    pub check: Check,
 }
 
 impl Screen {
@@ -39,10 +55,26 @@ impl Screen {
         Self {
             loc,
             platform: Platform::current(),
-            catalog: fixture::catalog(),
+            catalog: Catalog::default(),
             query: String::new(),
             outbox: Vec::new(),
+            check: Check::Never,
         }
+    }
+
+    pub fn apply(&mut self, update: Update) {
+        match update {
+            Update::Checking => self.check = Check::Running,
+            Update::Catalog(rows) => {
+                self.catalog = Catalog::new(rows);
+                self.check = Check::Done;
+            }
+            Update::Failed(detail) => self.check = Check::Failed(detail),
+        }
+    }
+
+    pub fn mark_checking(&mut self) {
+        self.check = Check::Running;
     }
 
     pub fn show(&mut self, ui: &mut Ui) {
@@ -81,38 +113,35 @@ impl Screen {
     }
 
     fn table(&mut self, ui: &mut Ui) {
-        ScrollArea::vertical()
-            .auto_shrink([false, false])
+        // Pas de zone défilante pour l'instant : avec deux applications elle prenait toute
+        // la hauteur et repoussait le pied de page hors de la fenêtre. Le défilement
+        // viendra quand la liste dépassera la fenêtre, avec une hauteur bornée explicite.
+        Grid::new("launcher-apps")
+            .num_columns(6)
+            .spacing(vec2(18.0, 10.0))
+            .min_col_width(0.0)
             .show(ui, |ui| {
-                Grid::new("launcher-apps")
-                    .num_columns(6)
-                    .spacing(vec2(18.0, 10.0))
-                    .min_col_width(0.0)
-                    .show(ui, |ui| {
-                        self.headers(ui);
-                        ui.end_row();
-                        let rows: Vec<Row> = self
-                            .catalog
-                            .visible(&self.query)
-                            .into_iter()
-                            .cloned()
-                            .collect();
-                        if rows.is_empty() {
-                            ui.label(
-                                RichText::new(t!(
-                                    &self.loc,
-                                    "ui-empty",
-                                    query = self.query.as_str()
-                                ))
-                                .weak(),
-                            );
-                            ui.end_row();
-                        }
-                        for row in rows {
-                            self.row(ui, &row);
-                            ui.end_row();
-                        }
-                    });
+                self.headers(ui);
+                ui.end_row();
+                let rows: Vec<Row> = self
+                    .catalog
+                    .visible(&self.query)
+                    .into_iter()
+                    .cloned()
+                    .collect();
+                if rows.is_empty() {
+                    let text = if matches!(self.check, Check::Running) {
+                        t!(&self.loc, "ui-loading")
+                    } else {
+                        t!(&self.loc, "ui-empty", query = self.query.as_str())
+                    };
+                    ui.label(RichText::new(text).weak());
+                    ui.end_row();
+                }
+                for row in rows {
+                    self.row(ui, &row);
+                    ui.end_row();
+                }
             });
     }
 
@@ -221,11 +250,20 @@ impl Screen {
         ui.add_space(8.0);
         ui.separator();
         ui.horizontal(|ui| {
-            ui.label(
-                RichText::new(t!(&self.loc, "ui-foot-checked"))
-                    .size(11.0)
-                    .weak(),
-            );
+            let (text, color) = match &self.check {
+                Check::Never => (t!(&self.loc, "ui-foot-idle"), None),
+                Check::Running => (t!(&self.loc, "ui-foot-checking"), None),
+                Check::Done => (t!(&self.loc, "ui-foot-done"), None),
+                Check::Failed(detail) => (
+                    t!(&self.loc, "ui-foot-failed", detail = detail.as_str()),
+                    Some(status_color(Tone::Alert)),
+                ),
+            };
+            let mut label = RichText::new(text).size(11.0).weak();
+            if let Some(color) = color {
+                label = label.color(color);
+            }
+            ui.label(label);
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.label(
                     RichText::new(concat!("v", env!("CARGO_PKG_VERSION")))
@@ -299,18 +337,82 @@ mod tests {
     use super::*;
     use egui_kittest::Harness;
     use egui_kittest::kittest::Queryable;
+    use lpdnsoft_launcher_core::{AppSpec, AssetPattern, Date, Release, Version};
+
+    fn app(id: &str, name: &str) -> AppSpec {
+        AppSpec {
+            id: id.into(),
+            name: name.into(),
+            tagline: "Application de test".into(),
+            author: "LPDNSoft".into(),
+            repo: format!("LordPhenixDeNetra/{id}"),
+            homepage: None,
+            asset: AssetPattern::new(format!("{id}-{{version}}-{{os}}-{{arch}}.{{ext}}")),
+            hidden: false,
+        }
+    }
+
+    fn row(id: &str, name: &str, installed: Option<&str>, available: &str) -> Row {
+        let app = app(id, name);
+        let release = Release::new(
+            available,
+            Some(Date {
+                year: 2026,
+                month: 10,
+                day: 28,
+            }),
+            Vec::new(),
+            "https://example.test",
+        )
+        .unwrap();
+        Row::new(app, installed.map(|v| v.parse().unwrap()), Some(release))
+    }
+
+    fn screen(rows: Vec<Row>) -> Screen {
+        let mut screen = Screen::new(crate::localizer(Some("fr")).unwrap());
+        screen.apply(Update::Catalog(rows));
+        screen
+    }
 
     #[test]
-    fn renders_the_catalog() {
-        let mut screen = Screen::new(crate::localizer(Some("fr")).unwrap());
+    fn renders_a_row_from_real_types() {
+        let mut screen = screen(vec![row("ankou", "aNkou", Some("1.0.0"), "v1.0.1")]);
         let harness = Harness::new_ui(move |ui| screen.show(ui));
         harness.get_by_label("aNkou");
     }
 
     #[test]
     fn counts_pending_updates() {
-        let screen = Screen::new(crate::localizer(Some("fr")).unwrap());
-        assert_eq!(screen.catalog.update_count(), 2);
-        assert_eq!(screen.catalog.rows().len(), 4);
+        let screen = screen(vec![
+            row("a", "A", Some("1.0.0"), "v1.0.1"),
+            row("b", "B", Some("2.0.0"), "v2.0.0"),
+            row("c", "C", None, "v1.0.0"),
+        ]);
+        assert_eq!(screen.catalog.update_count(), 1);
+    }
+
+    #[test]
+    fn records_the_check_state() {
+        let mut screen = Screen::new(crate::localizer(Some("fr")).unwrap());
+        assert_eq!(screen.check, Check::Never);
+        screen.apply(Update::Checking);
+        assert_eq!(screen.check, Check::Running);
+        screen.apply(Update::Catalog(Vec::new()));
+        assert_eq!(screen.check, Check::Done);
+        screen.apply(Update::Failed("réseau".into()));
+        assert_eq!(screen.check, Check::Failed("réseau".into()));
+    }
+
+    #[test]
+    fn keeps_an_installed_version_newer_than_the_release() {
+        let screen = screen(vec![row("a", "A", Some("1.2.0"), "v1.0.1")]);
+        assert!(matches!(
+            screen.catalog.rows()[0].state(),
+            State::UpToDate { .. }
+        ));
+        assert_eq!(
+            screen.catalog.rows()[0].installed,
+            Some(Version::new(1, 2, 0))
+        );
     }
 }
