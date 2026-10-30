@@ -40,12 +40,13 @@ Règles de tenue :
 |---|---|---|
 | **P1 — Télécharger et vérifier `SHA256SUMS`** | terminée sur branche, revue en attente : parseur d'empreintes, calcul par blocs, reprise par `Range`, refus d'un fichier de mauvaise taille ou de mauvaise empreinte, 12 tests dont 5 contre un serveur HTTP local | `crates/download`, ADR 0004 |
 | **P2 — Détection Linux et macOS** | terminée sur branche, revue en attente : `dpkg-query`, `rpm -q`, `pkgutil`, noms de paquet dans le manifeste, 15 tests sans machine cible | `crates/system`, spécification de détection |
+| **P3 — Installer et mettre à jour** | **étapes 1 à 3 faites** (plan, élévation, exécution), 13 tests ; les étapes 4 (interface) et 5 (vérification sur les trois systèmes) demandent une release réelle | `crates/install`, ADR 0005 |
 
 ## À faire
 
 | Priorité | Tâche | Effort | Prérequis |
 |---|---|---|---|
-| **P3** | Installer et mettre à jour : MSI, `.deb`/`.rpm`, `.pkg`, élévation | 2-3 j | **ADR 0005** (modèle d'élévation), P1 |
+| **P3 suite** | Brancher l'installation sur l'interface : télécharger, vérifier, planifier, exécuter, afficher chaque étape | ~1 j | étapes 1-3, une release à installer |
 | **P4** | Ouvrir l'application installée | ~2 h | chemin d'installation lu par OS |
 | **P5** | Toutes les versions et notes de version | ~4 h | conserver les anciennes releases |
 | **P6** | `pull_request_template.md` et `CONTRIBUTING.md`, dans les trois dépôts | ~30 min | — |
@@ -64,7 +65,7 @@ d'installation devront le dire.
 
 | Sujet | Pourquoi maintenant | Où |
 |---|---|---|
-| **Modèle d'élévation** : UAC à chaque installation, ou helper privilégié comme `ankoud` | Il conditionne l'architecture de P3 | ADR 0005, à écrire avant d'implémenter |
+| **Modèle d'élévation** : UAC à chaque installation, ou helper privilégié comme `ankoud` | **tranché** : élévation par installation, sans `unsafe` ni helper | ADR 0005, accepté |
 | Durée de vie du cache | Aujourd'hui seule la réponse 304 décide ; une release retirée reste visible (ADR 0003 §5) | à trancher si le besoin apparaît |
 
 ## Ce qu'on ne fera pas, et pourquoi
@@ -85,3 +86,4 @@ d'installation devront le dire.
 | 2026-10-30 | 0.3 : cache conditionnel, repli hors ligne annoncé comme tel |
 | 2026-10-30 | 0.4 : téléchargement vérifié (`Range`, `SHA256SUMS`, publication atomique), ADR 0004 |
 | 2026-10-30 | 0.4 : détection Linux (`dpkg-query`, `rpm -q`) et macOS (`pkgutil`), noms de paquet dans le manifeste |
+| 2026-10-30 | 0.4 : installation — plan par système, élévation `pkexec`/UAC/`osascript`, exécution, ADR 0005 |

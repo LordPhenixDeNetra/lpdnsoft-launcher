@@ -26,11 +26,13 @@ Ce qui marche :
 - **Actions honnêtes** : ce qui n'existe pas est désactivé avec une infobulle ; « Site web »
   et « Dépôt GitHub » ouvrent le navigateur ;
 - **Pied de page honnête** : jamais vérifié / en cours / vérifié / données en cache / échec ;
-- 80 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
+- 93 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
 
 Ce qui n'existe pas encore :
 
-- aucune installation ni mise à jour : le téléchargement vérifié n'est pas encore branché ;
+- l'installation existe en bibliothèque (`crates/install`, ADR 0005 : plan par système,
+  élévation `pkexec`/UAC/`osascript`, exécution) mais n'est branchée ni au téléchargement ni
+  à l'interface ; aucun clic n'installe donc encore ;
 - une application installée hors gestionnaire de paquets (archive, binaire copié, Flatpak)
   reste invisible : l'interface affiche alors « version inconnue ».
 
