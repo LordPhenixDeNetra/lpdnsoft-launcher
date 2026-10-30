@@ -47,4 +47,5 @@ apps/launcher binaire : arguments, journal, lancement de la fenêtre
 
 Décisions et limites : `docs/adr/0001-architecture.md`.
 
-Licence : MIT ou Apache-2.0, au choix.
+Licence : MIT. Le texte est dans `LICENSE-MIT` ; le manifeste le déclare, et un test
+vérifie que la déclaration et les fichiers livrés ne divergent pas.
