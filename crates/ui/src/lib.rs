@@ -4,6 +4,7 @@ mod app;
 pub mod bridge;
 pub mod links;
 mod open;
+pub mod prepare;
 pub mod screen;
 
 pub use app::run;

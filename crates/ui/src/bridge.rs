@@ -1,29 +1,33 @@
-//! Fil entre l'interface et le monde : GitHub et le registre, sur un thread à part.
+//! Fil entre l'interface et le monde : GitHub, le registre et l'installation, sur un thread
+//! à part.
 //!
-//! L'interface ne bloque jamais : elle demande une vérification, le fil pousse un `Update`
-//! quand il a fini, et `wake` provoque le redessin (même principe que le pont d'aNkou).
+//! L'interface ne bloque jamais : elle demande une vérification ou une installation, le fil
+//! pousse un `Update` à chaque étape, et `wake` provoque le redessin.
 //!
 //! Chaque application est lue en conditionnel : l'empreinte du cache part dans
 //! `If-None-Match`, un 304 ne coûte rien au quota, et une panne réseau retombe sur la
 //! dernière réponse connue plutôt que sur une liste vide (ADR 0003).
 
-use crate::screen::Update;
+use crate::prepare::prepare;
+use crate::screen::{Job, Request, Step, Update};
 use lpdnsoft_launcher_cache::{Cache, Entry};
-use lpdnsoft_launcher_core::{AppSpec, Release, Row, Version};
+use lpdnsoft_launcher_core::{AppSpec, Platform, Release, Row, Version};
+use lpdnsoft_launcher_download::{Checksums, Download};
 use lpdnsoft_launcher_github::{Answer, GithubError};
+use lpdnsoft_launcher_install::{Executor, SystemExecutor, elevated, plan};
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, channel};
 
 pub type Wake = Arc<dyn Fn() + Send + Sync>;
 
 pub struct Bridge {
-    refresh: Sender<()>,
+    requests: Sender<Request>,
     updates: Receiver<Update>,
 }
 
 impl Bridge {
     pub fn spawn(apps: Vec<AppSpec>, cache: Cache, wake: Wake) -> Self {
-        let (refresh, requests) = channel::<()>();
+        let (requests, inbox) = channel::<Request>();
         let (tx, updates) = channel();
         std::thread::spawn(move || {
             let runtime = match tokio::runtime::Builder::new_current_thread()
@@ -37,24 +41,37 @@ impl Bridge {
                     return;
                 }
             };
+            let mut rows: Vec<Row> = Vec::new();
             loop {
                 let _ = tx.send(Update::Checking);
                 (wake)();
                 let update = runtime.block_on(check(&apps, &cache));
+                if let Update::Catalog { rows: current, .. } = &update {
+                    rows = current.clone();
+                }
                 let _ = tx.send(update);
                 (wake)();
+
                 // Attente de la prochaine demande ; le canal fermé signifie « quitter ».
-                if requests.recv().is_err() {
+                let Ok(request) = inbox.recv() else {
                     return;
+                };
+                let id = match &request {
+                    Request::Install(id) | Request::Update(id) => id.clone(),
+                    _ => continue,
+                };
+                if let Some(row) = rows.iter().find(|row| row.app.id == id).cloned() {
+                    runtime.block_on(install(&row, &cache, &tx, &wake));
                 }
+                // La passe suivante montrera la version nouvellement installée.
             }
         });
-        Self { refresh, updates }
+        Self { requests, updates }
     }
 
-    /// Demande une nouvelle vérification (bouton « Actualiser »).
-    pub fn refresh(&self) {
-        let _ = self.refresh.send(());
+    /// Transmet une demande de l'écran (vérification, installation).
+    pub fn send(&self, request: Request) {
+        let _ = self.requests.send(request);
     }
 
     pub fn try_iter(&self) -> impl Iterator<Item = Update> + '_ {
@@ -149,6 +166,94 @@ async fn check(apps: &[AppSpec], cache: &Cache) -> Update {
         });
     }
     assemble(readings)
+}
+
+/// Télécharge, vérifie et installe la ligne ; chaque étape est poussée à l'écran.
+async fn install(row: &Row, cache: &Cache, tx: &Sender<Update>, wake: &Wake) {
+    let app = row.app.name.clone();
+    let step = match install_steps(row, cache, tx, &app, wake).await {
+        Ok(()) => Step::Done,
+        Err(detail) => Step::Failed(detail),
+    };
+    let _ = tx.send(Update::Job(Job {
+        app,
+        step,
+        done: 0,
+        total: None,
+    }));
+    (wake)();
+}
+
+async fn install_steps(
+    row: &Row,
+    cache: &Cache,
+    tx: &Sender<Update>,
+    app: &str,
+    wake: &Wake,
+) -> Result<(), String> {
+    let prepared = prepare(row, Platform::current()).map_err(|e| e.to_string())?;
+    let directory = cache
+        .directory()
+        .and_then(|directory| directory.parent().map(|parent| parent.join("packages")))
+        .ok_or_else(|| "dossier de configuration introuvable".to_owned())?;
+    std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
+    let client = lpdnsoft_launcher_github::client().map_err(|e| e.to_string())?;
+
+    // 1. Les empreintes de la release, puis celle de ce paquet précisément.
+    let sums = client
+        .get(&prepared.checksums_url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .error_for_status()
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+    let checksum = Checksums::parse(&sums)
+        .get(&prepared.name)
+        .ok_or_else(|| format!("{} absent de SHA256SUMS", prepared.name))?
+        .to_owned();
+
+    // 2. Le paquet, avec reprise et vérification.
+    let path = directory.join(&prepared.name);
+    let total = prepared.size;
+    let _ = tx.send(Update::Job(Job {
+        app: app.to_owned(),
+        step: Step::Downloading,
+        done: 0,
+        total,
+    }));
+    (wake)();
+    let mut download = Download::new(&client, &prepared.package_url, &path, &checksum);
+    if let Some(size) = total {
+        download = download.with_size(size);
+    }
+    download
+        .run(|done| {
+            let _ = tx.send(Update::Job(Job {
+                app: app.to_owned(),
+                step: Step::Downloading,
+                done,
+                total,
+            }));
+            (wake)();
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 3. Le plan d'installation, puis l'exécution avec l'élévation du système.
+    let os = Platform::current().os;
+    let base = plan(&path, os).map_err(|e| e.to_string())?;
+    let full = elevated(base, os);
+    let _ = tx.send(Update::Job(Job {
+        app: app.to_owned(),
+        step: Step::Installing,
+        done: 0,
+        total: None,
+    }));
+    (wake)();
+    SystemExecutor.run(&full).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

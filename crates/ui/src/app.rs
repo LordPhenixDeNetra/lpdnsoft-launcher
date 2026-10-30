@@ -49,15 +49,13 @@ impl eframe::App for App {
         let requests = std::mem::take(&mut self.screen.outbox);
         for request in requests {
             match &request {
-                Request::Refresh => {
-                    self.screen.mark_checking();
-                    self.bridge.refresh();
-                }
+                Request::Refresh => self.screen.mark_checking(),
                 Request::Website(id) | Request::Repository(id) => self.open(id.as_str(), &request),
-                // Installer, mettre à jour, ouvrir, choisir une version, masquer : pas
-                // encore. L'interface les désactive, donc rien n'arrive ici.
+                // Vérification et installation : le pont s'en occupe. Les autres actions
+                // n'existent pas encore, l'interface les désactive.
                 _ => {}
             }
+            self.bridge.send(request);
         }
     }
 
