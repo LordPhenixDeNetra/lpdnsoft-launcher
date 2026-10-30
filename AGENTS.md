@@ -12,9 +12,14 @@ Launcher de la suite **LPDNSoft** (Rust, egui 0.36, Windows/Linux/macOS). Décis
 
 - `crates/core` — `lpdnsoft-launcher-core` : versions, manifeste `apps.json`, releases, états,
   filtrage. **Aucune E/S, aucun réseau.**
+- `crates/github` — `lpdnsoft-launcher-github` : `GET /repos/<propriétaire>/<nom>/releases/latest`,
+  une requête par application (ADR 0002).
+- `crates/system` — `lpdnsoft-launcher-system` : version installée, lue dans le registre de
+  désinstallation sous Windows ; rien hors Windows pour l'instant.
 - `crates/ui` — `lpdnsoft-launcher-ui` : fenêtre eframe, liste, pastilles d'état, menu par
-  application ; `fixture.rs` fournit les données de démonstration.
+  application ; `bridge.rs` fait tourner la vérification sur un fil à part.
 - `apps/launcher` — `lpdnsoft-launcher` : arguments (`--lang en|fr`), journal, lancement.
+- `apps.json` — la liste des applications de la suite, embarquée et validée au démarrage.
 - `locales/{en,fr}/launcher.ftl` — traductions Fluent, embarquées à la compilation.
 - `xtask` — contrôles.
 
@@ -43,6 +48,12 @@ compilation.
 
 ## État et périmètre
 
-v0.1 est un **socle sans effet de bord** : pas de réseau, pas de téléchargement, pas
-d'installation, pas de détection des versions installées. Les boutons remplissent une file de
-`Request` que rien ne consomme encore. Ne pas présenter l'inverse dans la documentation.
+v0.2 lit de **vraies données** : les releases publiées sur GitHub (`GET /releases/latest`,
+une requête par application, soixante par heure sans authentification) et la version
+installée, lue dans le registre de désinstallation sous Windows. La liste des applications
+est `apps.json`, embarqué et validé au démarrage.
+
+Ce qui n'existe pas encore : le téléchargement, la vérification `SHA256SUMS`, l'installation
+et la mise à jour. Les boutons Installer / Mettre à jour / Ouvrir et le menu remplissent une
+file de `Request` que rien ne consomme — ne pas présenter l'inverse dans la documentation.
+La détection des versions installées n'est pas écrite hors Windows.
