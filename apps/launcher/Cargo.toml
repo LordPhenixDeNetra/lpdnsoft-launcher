@@ -10,8 +10,32 @@ description = "Launcher de la suite LPDNSoft"
 [lints]
 workspace = true
 
+# Paquet Debian (ADR 0011 d'aNkou, repris ici). Le nom du paquet doit rester
+# `lpdnsoft-launcher` : c'est lui que la détection interroge (`dpkg-query -W`).
+[package.metadata.deb]
+maintainer = "LordPhenixDeNetra <69590712+LordPhenixDeNetra@users.noreply.github.com>"
+extended-description = "Launcher de la suite LPDNSoft : versions publiées sur GitHub, installation vérifiée par SHA256SUMS."
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/lpdnsoft-launcher", "usr/bin/", "755"],
+    ["packaging/linux/lpdnsoft-launcher.desktop", "usr/share/applications/", "644"],
+]
+
+# Paquet RPM : mêmes fichiers, même nom de paquet.
+[package.metadata.generate-rpm]
+summary = "Launcher de la suite LPDNSoft"
+license = "MIT"
+assets = [
+    { source = "target/release/lpdnsoft-launcher", dest = "/usr/bin/lpdnsoft-launcher", mode = "755" },
+    { source = "packaging/linux/lpdnsoft-launcher.desktop", dest = "/usr/share/applications/lpdnsoft-launcher.desktop", mode = "644" },
+]
+
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }
 lpdnsoft-launcher-ui = { workspace = true }
 lpdnsoft-log = { workspace = true }
+
+[dev-dependencies]
+lpdnsoft-launcher-core = { workspace = true }
