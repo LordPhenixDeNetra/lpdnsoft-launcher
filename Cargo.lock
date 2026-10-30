@@ -2227,6 +2227,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "lpdnsoft-launcher-install"
+version = "0.4.0"
+dependencies = [
+ "lpdnsoft-launcher-core",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "lpdnsoft-launcher-system"
 version = "0.4.0"
 dependencies = [
