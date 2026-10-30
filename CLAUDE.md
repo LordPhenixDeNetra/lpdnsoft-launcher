@@ -42,6 +42,9 @@ Prérequis : Rust stable ≥ 1.95, `cargo install cargo-deny --locked`.
 - Une erreur `thiserror` par crate ; `anyhow` seulement dans `apps/*` et `xtask`.
 - Préfixe des crates : `lpdnsoft-`.
 - Langues : `en` et `fr`, repli `en`.
+- **Le suivi vit dans `BACKLOG.md`** : toute tâche commencée passe en *En cours*, toute tâche
+  livrée en *Fait* avec son numéro de PR, dans le même changement que le code. Une tâche
+  abandonnée y reste, avec sa raison.
 
 ## i18n
 
