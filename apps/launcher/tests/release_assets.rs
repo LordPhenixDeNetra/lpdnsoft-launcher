@@ -138,3 +138,26 @@ fn the_deb_and_rpm_names_stay_the_crate_name() {
     assert_eq!(app.deb_package(), "lpdnsoft-launcher");
     assert_eq!(app.rpm_package(), "lpdnsoft-launcher");
 }
+
+#[test]
+fn the_release_notes_are_generated_and_not_written_by_hand() {
+    // Les notes de version décrivent des pull requests fusionnées : les rédiger à la main
+    // les rend fausses dès la deuxième release. GitHub les génère, le launcher les affiche.
+    assert!(
+        RELEASE.contains("--generate-notes"),
+        "les notes doivent être générées depuis les pull requests fusionnées"
+    );
+    assert!(
+        !RELEASE.contains("--notes \""),
+        "une note écrite en dur deviendrait fausse à la release suivante"
+    );
+}
+
+#[test]
+fn the_release_runs_when_a_version_reaches_main() {
+    assert!(RELEASE.contains("branches: [main]"));
+    assert!(
+        RELEASE.contains("gh release view"),
+        "la publication doit être sautée quand la version est déjà publiée"
+    );
+}

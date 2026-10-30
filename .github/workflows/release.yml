@@ -1,32 +1,54 @@
 name: Release
 
-# Publie les paquets du launcher sur un tag `v<version du workspace>`.
+# Publication automatique : dès qu'une version du workspace arrive sur `main` et qu'aucune
+# release ne porte déjà ce numéro, les cinq paquets sont construits, empreints et publiés,
+# avec des notes de version générées par GitHub à partir des pull requests fusionnées.
+#
 # Les noms d'actifs sont un contrat : le launcher les cherche avec le motif d'apps.json
 # (`lpdnsoft-launcher-{version}-{os}-{arch}.{ext}`). Le test
 # `apps/launcher/tests/release_assets.rs` vérifie que ce fichier les produit tous.
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+  # Relance une publication qui a échoué (même version déjà présente dans Cargo.toml), sans
+  # avoir à pousser un commit vide.
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+# Deux publications ne doivent jamais se chevaucher.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  version:
+  prepare:
     runs-on: ubuntu-24.04
     outputs:
-      version: ${{ steps.read.outputs.version }}
+      version: ${{ steps.check.outputs.version }}
+      release: ${{ steps.check.outputs.release }}
     steps:
       - uses: actions/checkout@v4
-      - id: read
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "version du workspace : $version"
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "v$version est déjà publiée : rien à faire."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "v$version sera publiée."
+          fi
 
   linux:
-    needs: version
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +63,7 @@ jobs:
       - name: Paquets
         run: |
           set -euo pipefail
-          version="${{ needs.version.outputs.version }}"
+          version="${{ needs.prepare.outputs.version }}"
           cargo deb -p lpdnsoft-launcher --no-build --no-strip
           cargo generate-rpm --manifest-path apps/launcher/Cargo.toml
           mv target/debian/*.deb "lpdnsoft-launcher-$version-linux-x86_64.deb"
@@ -62,7 +84,8 @@ jobs:
             lpdnsoft-launcher-*-linux-x86_64.rpm
 
   windows:
-    needs: version
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
     runs-on: windows-2025
     steps:
       - name: Chemins longs
@@ -80,7 +103,7 @@ jobs:
         run: cargo build --release -p lpdnsoft-launcher
       - name: MSI
         run: |
-          $version = "${{ needs.version.outputs.version }}"
+          $version = "${{ needs.prepare.outputs.version }}"
           wix build packaging/windows/launcher.wxs -arch x64 `
             -d Version=$version -d BinDir=target\release `
             -o "lpdnsoft-launcher-$version-windows-x86_64.msi"
@@ -91,7 +114,8 @@ jobs:
           path: lpdnsoft-launcher-*-windows-x86_64.msi
 
   macos:
-    needs: version
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
     strategy:
       matrix:
         include:
@@ -113,7 +137,7 @@ jobs:
       - name: Paquet
         run: |
           set -euo pipefail
-          version="${{ needs.version.outputs.version }}"
+          version="${{ needs.prepare.outputs.version }}"
           bash packaging/macos/build-pkg.sh "$version" "${{ matrix.arch }}" \
             "target/${{ matrix.arch }}-apple-darwin/release/lpdnsoft-launcher" \
             "lpdnsoft-launcher-$version-macos-${{ matrix.arch }}.pkg"
@@ -124,7 +148,7 @@ jobs:
           path: lpdnsoft-launcher-*-macos-${{ matrix.arch }}.pkg
 
   publish:
-    needs: [version, linux, windows, macos]
+    needs: [prepare, linux, windows, macos]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
@@ -142,8 +166,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          version="${{ needs.version.outputs.version }}"
+          version="${{ needs.prepare.outputs.version }}"
+          # `--generate-notes` fait écrire les notes par GitHub à partir des pull requests
+          # fusionnées depuis la release précédente : elles restent vraies sans que personne
+          # ne les rédige. `--target main` crée le tag au bon endroit, puisque plus aucun tag
+          # n'est poussé à la main.
           gh release create "v$version" dist/* \
             --repo "${{ github.repository }}" \
+            --target main \
             --title "LPDNSoft Launcher $version" \
-            --notes "Paquets du launcher $version : vérifiez chaque fichier avec \`SHA256SUMS\`."
+            --generate-notes

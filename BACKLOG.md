@@ -40,6 +40,7 @@ Règles de tenue :
 | **Toutes les versions et notes de version (P5)** | **0.4** | **#16** | **notes sans requête, historique à la demande, fenêtre de détail, 10 tests** |
 | **Modèle de PR et CONTRIBUTING (P6)** | **0.4** | **#17** | **un modèle et un guide par dépôt : launcher, ankou, lpdnsoft-libs** |
 | **Release du launcher (P7)** | **0.4** | **#18** | **`.deb`/`.rpm`, MSI WiX, `.pkg`, workflow `SHA256SUMS`, runbook, 6 tests garde-fous** |
+| **Publication automatique et notes générées** | **0.4** | à venir | déclenchement sur `main`, saut si déjà publiée, notes générées par GitHub, 2 tests de plus |
 
 ## En cours
 
