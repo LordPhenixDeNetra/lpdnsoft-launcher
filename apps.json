@@ -21,7 +21,12 @@
       "author": "LPDNSoft",
       "repo": "LordPhenixDeNetra/lpdnsoft-launcher",
       "homepage": "https://github.com/LordPhenixDeNetra/lpdnsoft-launcher",
-      "asset": "lpdnsoft-launcher-{version}-{os}-{arch}.{ext}"
+      "asset": "lpdnsoft-launcher-{version}-{os}-{arch}.{ext}",
+      "packages": {
+        "deb": "lpdnsoft-launcher",
+        "rpm": "lpdnsoft-launcher",
+        "pkg": "fr.lpdnsoft.launcher"
+      }
     }
   ]
 }

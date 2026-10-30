@@ -1,0 +1,47 @@
+<!--
+  MSI du launcher LPDNSoft (WiX 5), sur le modèle d'aNkou (ADR 0011).
+
+  Construit par .github/workflows/release.yml :
+    wix build packaging/windows/launcher.wxs -arch x64
+      -d Version=0.4.0 -d BinDir=target\release
+      -o lpdnsoft-launcher-0.4.0-windows-x86_64.msi
+
+  Deux contraintes viennent du launcher lui-même, pas du confort :
+  - `Name` devient le `DisplayName` du registre, et la détection cherche le nom de
+    l'application dans cette valeur : « LPDNSoft Launcher » est le nom d'`apps.json` ;
+  - l'exécutable est posé dans `%ProgramFiles%\LPDNSoft Launcher\lpdnsoft-launcher.exe`,
+    la disposition que la résolution de chemin essaie quand le registre ne donne ni
+    `DisplayIcon` ni `InstallLocation`.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <!-- UpgradeCode fixe : chaque nouvelle version remplace la précédente. -->
+  <Package Name="LPDNSoft Launcher" Manufacturer="LPDNSoft" Version="$(Version)"
+           UpgradeCode="5B0F4C2A-9E1D-4F6B-8C77-2A6D1E4B9C31" Scope="perMachine"
+           Language="1036">
+    <MajorUpgrade DowngradeErrorMessage="Une version plus récente du launcher est déjà installée." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="LPDNSoft Launcher">
+        <Component Id="Launcher">
+          <File Id="LauncherExe" Source="$(BinDir)\lpdnsoft-launcher.exe" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="AppShortcut" Name="LPDNSoft Launcher"
+                  Target="[INSTALLFOLDER]lpdnsoft-launcher.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKLM" Key="Software\LPDNSoft\Launcher" Name="StartMenuShortcut"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="LPDNSoft Launcher" Level="1">
+      <ComponentRef Id="Launcher" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>

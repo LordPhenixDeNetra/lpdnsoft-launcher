@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=LPDNSoft Launcher
+Comment=Installer et mettre à jour les applications de la suite LPDNSoft
+Exec=lpdnsoft-launcher
+Terminal=false
+Categories=Utility;System;
+Keywords=launcher;update;install;lpdnsoft;
+StartupNotify=true

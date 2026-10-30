@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Info.plist du launcher, rempli par build-pkg.sh (@VERSION@, @ARCH@).
+
+  CFBundleIdentifier est l'identifiant que `pkgutil --pkg-info` et l'icône utilisent ; il est
+  repris dans apps.json (champ `packages.pkg`), sinon la détection ne le retrouverait pas.
+-->
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>LPDNSoft Launcher</string>
+  <key>CFBundleDisplayName</key>
+  <string>LPDNSoft Launcher</string>
+  <key>CFBundleIdentifier</key>
+  <string>fr.lpdnsoft.launcher</string>
+  <key>CFBundleVersion</key>
+  <string>@VERSION@</string>
+  <key>CFBundleShortVersionString</key>
+  <string>@VERSION@</string>
+  <key>CFBundleExecutable</key>
+  <string>lpdnsoft-launcher</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>11.0</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>LSUIElement</key>
+  <false/>
+  <key>LSArchitecturePriority</key>
+  <array>
+    <string>@ARCH@</string>
+  </array>
+</dict>
+</plist>

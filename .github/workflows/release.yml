@@ -1,0 +1,147 @@
+name: Release
+
+# Publie les paquets du launcher sur un tag `v<version du workspace>`.
+# Les noms d'actifs sont un contrat : le launcher les cherche avec le motif d'apps.json
+# (`lpdnsoft-launcher-{version}-{os}-{arch}.{ext}`). Le test
+# `apps/launcher/tests/release_assets.rs` vérifie que ce fichier les produit tous.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: read
+        run: |
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version du workspace : $version"
+
+  linux:
+    needs: version
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Outils de paquet
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deb,cargo-generate-rpm
+      - name: Compilation
+        run: cargo build --release -p lpdnsoft-launcher
+      - name: Paquets
+        run: |
+          set -euo pipefail
+          version="${{ needs.version.outputs.version }}"
+          cargo deb -p lpdnsoft-launcher --no-build --no-strip
+          cargo generate-rpm -p apps/launcher
+          mv target/debian/*.deb "lpdnsoft-launcher-$version-linux-x86_64.deb"
+          mv target/generate-rpm/*.rpm "lpdnsoft-launcher-$version-linux-x86_64.rpm"
+          ls -l lpdnsoft-launcher-*.deb lpdnsoft-launcher-*.rpm
+      - name: Essai du .deb
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y ./lpdnsoft-launcher-*-linux-x86_64.deb
+          dpkg-query -W -f='${Version}\n' lpdnsoft-launcher
+          test -x /usr/bin/lpdnsoft-launcher
+          sudo dpkg --purge lpdnsoft-launcher
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            lpdnsoft-launcher-*-linux-x86_64.deb
+            lpdnsoft-launcher-*-linux-x86_64.rpm
+
+  windows:
+    needs: version
+    runs-on: windows-2025
+    steps:
+      - name: Chemins longs
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: WiX
+        run: |
+          choco install wixtoolset --no-progress -y
+          echo "$env:WIX\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Compilation
+        run: cargo build --release -p lpdnsoft-launcher
+      - name: MSI
+        run: |
+          $version = "${{ needs.version.outputs.version }}"
+          wix build packaging/windows/launcher.wxs -arch x64 `
+            -d Version=$version -d BinDir=target\release `
+            -o "lpdnsoft-launcher-$version-windows-x86_64.msi"
+          Get-ChildItem *.msi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: lpdnsoft-launcher-*-windows-x86_64.msi
+
+  macos:
+    needs: version
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14
+            arch: aarch64
+          - runner: macos-13
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch }}-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - name: Compilation
+        run: |
+          rustup target add ${{ matrix.arch }}-apple-darwin
+          cargo build --release -p lpdnsoft-launcher --target ${{ matrix.arch }}-apple-darwin
+      - name: Paquet
+        run: |
+          set -euo pipefail
+          version="${{ needs.version.outputs.version }}"
+          bash packaging/macos/build-pkg.sh "$version" "${{ matrix.arch }}" \
+            "target/${{ matrix.arch }}-apple-darwin/release/lpdnsoft-launcher" \
+            "lpdnsoft-launcher-$version-macos-${{ matrix.arch }}.pkg"
+          ls -l *.pkg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: lpdnsoft-launcher-*-macos-${{ matrix.arch }}.pkg
+
+  publish:
+    needs: [version, linux, windows, macos]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Empreintes
+        run: |
+          set -euo pipefail
+          cd dist
+          find . -type f ! -name SHA256SUMS -printf '%P\n' | sort | xargs sha256sum > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${{ needs.version.outputs.version }}"
+          gh release create "v$version" dist/* \
+            --repo "${{ github.repository }}" \
+            --title "LPDNSoft Launcher $version" \
+            --notes "Paquets du launcher $version : vérifiez chaque fichier avec \`SHA256SUMS\`."
