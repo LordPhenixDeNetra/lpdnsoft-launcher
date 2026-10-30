@@ -48,9 +48,15 @@ impl eframe::App for App {
         }
         let requests = std::mem::take(&mut self.screen.outbox);
         for request in requests {
-            if request == Request::Refresh {
-                self.screen.mark_checking();
-                self.bridge.refresh();
+            match &request {
+                Request::Refresh => {
+                    self.screen.mark_checking();
+                    self.bridge.refresh();
+                }
+                Request::Website(id) | Request::Repository(id) => self.open(id.as_str(), &request),
+                // Installer, mettre à jour, ouvrir, choisir une version, masquer : pas
+                // encore. L'interface les désactive, donc rien n'arrive ici.
+                _ => {}
             }
         }
     }
@@ -59,5 +65,22 @@ impl eframe::App for App {
         egui::CentralPanel::default()
             .frame(egui::Frame::group(ui.style()).inner_margin(16.0))
             .show(ui, |ui| self.screen.show(ui));
+    }
+}
+
+impl App {
+    /// Ouvre le site ou le dépôt de l'application ; un échec est affiché, pas avalé.
+    fn open(&mut self, id: &str, request: &Request) {
+        let Some(row) = self.screen.catalog.get(id) else {
+            return;
+        };
+        let Some(url) = crate::links::url_for(&row.app, request) else {
+            return;
+        };
+        if let Err(e) = crate::open::url(&url) {
+            let detail = e.to_string();
+            let notice = t!(&self.screen.loc, "ui-open-failed", detail = detail.as_str());
+            self.screen.notice = Some(notice);
+        }
     }
 }

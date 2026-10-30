@@ -30,4 +30,6 @@ ui-foot-checking = CHECKING…
 ui-foot-done = CHECKED · VIA GITHUB
 ui-foot-failed = FAILED: { $detail }
 ui-loading = Fetching releases…
+ui-unavailable = Available in a future version
+ui-open-failed = Could not open the browser: { $detail }
 ui-empty = No app matches “{ $query }”.

@@ -83,3 +83,19 @@ fn keeps_an_installed_version_newer_than_the_release() {
         Some(Version::new(1, 2, 0))
     );
 }
+
+#[test]
+fn shows_the_notice_of_a_failed_action() {
+    let mut screen = screen(Vec::new());
+    screen.notice = Some("Navigateur indisponible : test".into());
+    let harness = Harness::new_ui(move |ui| screen.show(ui));
+    harness.get_by_label("Navigateur indisponible : test");
+}
+
+#[test]
+fn a_new_check_clears_the_notice() {
+    let mut screen = screen(Vec::new());
+    screen.notice = Some("Navigateur indisponible : test".into());
+    screen.apply(Update::Checking);
+    assert!(screen.notice.is_none());
+}

@@ -77,6 +77,6 @@ installée, lue dans le registre de désinstallation sous Windows. La liste des 
 est `apps.json`, embarqué et validé au démarrage.
 
 Ce qui n'existe pas encore : le téléchargement, la vérification `SHA256SUMS`, l'installation
-et la mise à jour. Les boutons Installer / Mettre à jour / Ouvrir et le menu remplissent une
-file de `Request` que rien ne consomme — ne pas présenter l'inverse dans la documentation.
+et la mise à jour. Ces actions sont **désactivées** dans l'interface, avec une infobulle qui
+l'annonce ; seuls « Site web » et « Dépôt GitHub » agissent, en ouvrant le navigateur.
 La détection des versions installées n'est pas écrite hors Windows.
