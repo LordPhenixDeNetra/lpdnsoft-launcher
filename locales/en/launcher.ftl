@@ -1,0 +1,29 @@
+## Launcher LPDNSoft — chaînes visibles (anglais, langue de repli).
+
+app-title = LPDNSoft Launcher
+ui-brand = LPDNSOFT
+ui-brand-sub = APP SUITE
+ui-refresh = Refresh
+ui-update-all = UPDATE ALL ({ $count })
+ui-search = Search apps…
+ui-col-app = APPLICATION
+ui-col-state = STATUS
+ui-col-version = VERSION
+ui-col-date = RELEASED
+ui-col-author = AUTHOR
+ui-state-not-installed = NOT INSTALLED
+ui-state-update-available = UPDATE AVAILABLE
+ui-state-up-to-date = UP TO DATE
+ui-state-unknown = VERSION UNKNOWN
+ui-install = INSTALL
+ui-update = UPDATE
+ui-open = OPEN
+ui-more = More actions
+ui-menu-version = Choose a version
+ui-menu-notes = Release notes
+ui-menu-website = Website
+ui-menu-repo = GitHub repository
+ui-menu-all-versions = All versions
+ui-menu-hide = Hide app
+ui-foot-checked = CHECKED JUST NOW · VIA GITHUB
+ui-empty = No app matches “{ $query }”.
