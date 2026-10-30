@@ -42,6 +42,7 @@ fn screen(rows: Vec<Row>) -> Screen {
     screen.apply(Update::Catalog {
         rows,
         cached: false,
+        openable: Default::default(),
     });
     screen
 }
@@ -72,6 +73,7 @@ fn records_the_check_state() {
     screen.apply(Update::Catalog {
         rows: Vec::new(),
         cached: false,
+        openable: Default::default(),
     });
     assert_eq!(screen.check, Check::Done);
     screen.apply(Update::Failed("réseau".into()));
@@ -84,6 +86,7 @@ fn says_when_the_catalog_comes_from_the_cache() {
     screen.apply(Update::Catalog {
         rows: Vec::new(),
         cached: true,
+        openable: Default::default(),
     });
     assert_eq!(screen.check, Check::DoneCached);
 }

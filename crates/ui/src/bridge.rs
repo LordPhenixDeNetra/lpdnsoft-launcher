@@ -15,6 +15,7 @@ use lpdnsoft_launcher_core::{AppSpec, Platform, Release, Row, Version};
 use lpdnsoft_launcher_download::{Checksums, Download};
 use lpdnsoft_launcher_github::{Answer, GithubError};
 use lpdnsoft_launcher_install::{Executor, SystemExecutor, elevated, plan};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, channel};
 
@@ -109,7 +110,11 @@ fn assemble(readings: Vec<Reading>) -> Update {
         let detail = first_error.unwrap_or_else(|| "aucune donnée reçue".into());
         return Update::Failed(detail);
     }
-    Update::Catalog { rows, cached }
+    Update::Catalog {
+        rows,
+        cached,
+        openable: HashMap::new(),
+    }
 }
 
 /// Interroge GitHub pour chaque application, et le registre pour la version installée.
@@ -165,7 +170,17 @@ async fn check(apps: &[AppSpec], cache: &Cache) -> Update {
             from_cache,
         });
     }
-    assemble(readings)
+    let mut update = assemble(readings);
+    // Les chemins d'exécution sont une lecture du disque : ils sont ajoutés ici, hors de la
+    // partie pure qui décide du contenu de la liste.
+    if let Update::Catalog { openable, .. } = &mut update {
+        for app in apps {
+            if let Some(path) = lpdnsoft_launcher_system::installed_path(app) {
+                openable.insert(app.id.clone(), path);
+            }
+        }
+    }
+    update
 }
 
 /// Télécharge, vérifie et installe la ligne ; chaque étape est poussée à l'écran.

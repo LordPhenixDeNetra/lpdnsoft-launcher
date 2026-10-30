@@ -51,6 +51,7 @@ impl eframe::App for App {
             match &request {
                 Request::Refresh => self.screen.mark_checking(),
                 Request::Website(id) | Request::Repository(id) => self.open(id.as_str(), &request),
+                Request::Open(id) => self.launch(id.as_str()),
                 // Vérification et installation : le pont s'en occupe. Les autres actions
                 // n'existent pas encore, l'interface les désactive.
                 _ => {}
@@ -76,6 +77,18 @@ impl App {
             return;
         };
         if let Err(e) = crate::open::url(&url) {
+            let detail = e.to_string();
+            let notice = t!(&self.screen.loc, "ui-open-failed", detail = detail.as_str());
+            self.screen.notice = Some(notice);
+        }
+    }
+
+    /// Lance l'application installée ; un échec est affiché, pas avalé.
+    fn launch(&mut self, id: &str) {
+        let Some(path) = self.screen.openable.get(id).cloned() else {
+            return;
+        };
+        if let Err(e) = crate::open::program(&path) {
             let detail = e.to_string();
             let notice = t!(&self.screen.loc, "ui-open-failed", detail = detail.as_str());
             self.screen.notice = Some(notice);

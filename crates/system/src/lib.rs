@@ -10,6 +10,7 @@
 //! `Runner`, donc testables sur n'importe quelle machine.
 
 use lpdnsoft_launcher_core::{AppSpec, Version};
+use std::path::{Path, PathBuf};
 
 /// Nombre de composants retenus d'une version affichée par un installateur.
 const COMPONENTS: usize = 3;
@@ -151,10 +152,74 @@ fn strip_epoch(text: &str) -> &str {
     }
 }
 
+/// Chemin de l'application installée, s'il existe réellement sur le disque.
+pub fn installed_path(app: &AppSpec) -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        windows::installed_path(app)
+    }
+    #[cfg(target_os = "macos")]
+    {
+        macos_path(app)
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        linux_path(app)
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = app;
+        None
+    }
+}
+
+/// `/usr/bin/<paquet>` — là où le `.deb` et le `.rpm` posent le binaire.
+pub fn linux_path(app: &AppSpec) -> Option<PathBuf> {
+    let candidate = Path::new("/usr/bin").join(app.deb_package());
+    candidate.is_file().then_some(candidate)
+}
+
+/// `/Applications/<Nom>.app` — le paquet macOS installé par `installer`.
+pub fn macos_path(app: &AppSpec) -> Option<PathBuf> {
+    let candidate = Path::new("/Applications").join(format!("{}.app", app.name));
+    candidate.is_dir().then_some(candidate)
+}
+
+/// Extrait le chemin d'une valeur `DisplayIcon`, qui peut porter un index d'icône.
+///
+/// `"C:\Program Files\aNkou\ankou.exe",0` → `C:\Program Files\aNkou\ankou.exe`
+pub fn exe_from_display_icon(value: &str) -> Option<&str> {
+    let trimmed = value.trim();
+    let without_index = match trimmed.rsplit_once(',') {
+        Some((path, index))
+            if !index.trim().is_empty() && index.trim().bytes().all(|b| b.is_ascii_digit()) =>
+        {
+            path
+        }
+        _ => trimmed,
+    };
+    let unquoted = without_index.trim().trim_matches('"').trim();
+    (!unquoted.is_empty()).then_some(unquoted)
+}
+
+/// Emplacements essayés sous Windows quand le registre ne donne pas de chemin utilisable.
+///
+/// Le premier est celui d'un MSI WiX réel : `%ProgramFiles%\<nom>\<id>.exe`.
+pub fn windows_candidates(display_name: &str, id: &str, program_files: &Path) -> Vec<PathBuf> {
+    vec![
+        program_files.join(display_name).join(format!("{id}.exe")),
+        program_files.join(id).join(format!("{id}.exe")),
+        program_files
+            .join(display_name)
+            .join(format!("{display_name}.exe")),
+    ]
+}
+
 #[cfg(windows)]
 mod windows {
     use super::version_from_display;
     use lpdnsoft_launcher_core::{AppSpec, Version};
+    use std::path::{Path, PathBuf};
     use winreg::RegKey;
     use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ};
 
@@ -163,7 +228,8 @@ mod windows {
         r"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
     ];
 
-    pub fn installed(app: &AppSpec) -> Option<Version> {
+    /// Entrée de désinstallation qui correspond à cette application.
+    fn find_entry(app: &AppSpec) -> Option<RegKey> {
         let needle = app.name.to_lowercase();
         for hive in [
             RegKey::predef(HKEY_LOCAL_MACHINE),
@@ -173,25 +239,56 @@ mod windows {
                 let Ok(key) = hive.open_subkey_with_flags(path, KEY_READ) else {
                     continue;
                 };
-                for entry in key.enum_keys().flatten() {
-                    let Ok(entry) = key.open_subkey_with_flags(&entry, KEY_READ) else {
+                for name in key.enum_keys().flatten() {
+                    let Ok(entry) = key.open_subkey_with_flags(&name, KEY_READ) else {
                         continue;
                     };
-                    let Ok(name) = entry.get_value::<String, _>("DisplayName") else {
+                    let Ok(display) = entry.get_value::<String, _>("DisplayName") else {
                         continue;
                     };
-                    if !name.to_lowercase().contains(&needle) {
-                        continue;
-                    }
-                    let Ok(text) = entry.get_value::<String, _>("DisplayVersion") else {
-                        continue;
-                    };
-                    if let Some(version) = version_from_display(&text) {
-                        return Some(version);
+                    if display.to_lowercase().contains(&needle) {
+                        return Some(entry);
                     }
                 }
             }
         }
         None
+    }
+
+    pub fn installed(app: &AppSpec) -> Option<Version> {
+        let entry = find_entry(app)?;
+        let text = entry.get_value::<String, _>("DisplayVersion").ok()?;
+        version_from_display(&text)
+    }
+
+    /// Chemin de l'exécutable : `DisplayIcon`, puis `InstallLocation`, puis les conventions.
+    ///
+    /// Sur un MSI WiX réel (aNkou 1.0.0), `InstallLocation` est vide et `DisplayIcon` absent :
+    /// seule la convention `%ProgramFiles%\<nom>\<id>.exe` répond. Les trois sont essayées.
+    pub fn installed_path(app: &AppSpec) -> Option<PathBuf> {
+        let entry = find_entry(app);
+        if let Some(entry) = &entry {
+            if let Ok(icon) = entry.get_value::<String, _>("DisplayIcon")
+                && let Some(exe) = super::exe_from_display_icon(&icon)
+            {
+                let path = PathBuf::from(exe);
+                if path.is_file() {
+                    return Some(path);
+                }
+            }
+            if let Ok(location) = entry.get_value::<String, _>("InstallLocation") {
+                let location = location.trim();
+                if !location.is_empty() {
+                    let path = Path::new(location).join(format!("{}.exe", app.id));
+                    if path.is_file() {
+                        return Some(path);
+                    }
+                }
+            }
+        }
+        let program_files = std::env::var_os("ProgramFiles")?;
+        super::windows_candidates(&app.name, &app.id, Path::new(&program_files))
+            .into_iter()
+            .find(|candidate| candidate.is_file())
     }
 }

@@ -39,6 +39,32 @@ pub fn url(target: &str) -> Result<(), OpenError> {
     }
 }
 
+/// Lance l'application installée, sans attendre sa fermeture.
+///
+/// Le chemin vient de `installed_path`, qui n'accepte qu'un fichier réellement présent : on
+/// n'exécute jamais un chemin venu d'ailleurs.
+pub fn program(path: &std::path::Path) -> Result<(), OpenError> {
+    if !path.exists() {
+        return Err(OpenError::Refused(path.display().to_string()));
+    }
+    #[cfg(target_os = "macos")]
+    {
+        // Un `.app` est un dossier : c'est `open` qui sait le lancer.
+        std::process::Command::new("open")
+            .arg(path)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| OpenError::Unavailable(e.to_string()))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        std::process::Command::new(path)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| OpenError::Unavailable(e.to_string()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -53,5 +79,11 @@ mod tests {
         ] {
             assert_eq!(url(target), Err(OpenError::Refused(target.to_owned())));
         }
+    }
+
+    #[test]
+    fn refuses_a_program_that_does_not_exist() {
+        let missing = std::path::Path::new("lpdnsoft-application-absente.exe");
+        assert!(matches!(program(missing), Err(OpenError::Refused(_))));
     }
 }
