@@ -13,7 +13,9 @@ workspace = true
 [dependencies]
 lpdnsoft-launcher-cache = { workspace = true }
 lpdnsoft-launcher-core = { workspace = true }
+lpdnsoft-launcher-download = { workspace = true }
 lpdnsoft-launcher-github = { workspace = true }
+lpdnsoft-launcher-install = { workspace = true }
 lpdnsoft-launcher-system = { workspace = true }
 lpdnsoft-i18n = { workspace = true }
 lpdnsoft-ui = { workspace = true }

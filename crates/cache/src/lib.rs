@@ -55,6 +55,11 @@ impl Cache {
         self.dir.as_ref().map(|dir| dir.join(format!("{id}.json")))
     }
 
+    /// Dossier du cache, s'il est connu. Sert à poser les paquets téléchargés à côté.
+    pub fn directory(&self) -> Option<&std::path::Path> {
+        self.dir.as_deref()
+    }
+
     /// Entrée en cache, si elle existe et reste lisible. Un fichier corrompu est ignoré :
     /// le pire qu'il puisse arriver est une requête complète.
     pub fn load(&self, id: &str) -> Option<Entry> {

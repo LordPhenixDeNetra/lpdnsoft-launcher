@@ -1,10 +1,10 @@
 //! Quelles actions mènent quelque part, et vers quelle adresse.
 //!
-//! L'interface n'affiche jamais un bouton actif qui ne ferait rien : cette module décide
-//! ce qui est disponible, et le reste est désactivé avec une infobulle (ADR 0002).
+//! L'interface n'affiche jamais un bouton actif qui ne ferait rien : ce module décide ce qui
+//! est disponible, et le reste est désactivé avec une infobulle (ADR 0002, ADR 0005).
 
 use crate::screen::Request;
-use lpdnsoft_launcher_core::AppSpec;
+use lpdnsoft_launcher_core::{AppSpec, Row, State};
 
 /// Adresse à ouvrir pour cette requête, s'il y en a une.
 pub fn url_for(app: &AppSpec, request: &Request) -> Option<String> {
@@ -17,8 +17,16 @@ pub fn url_for(app: &AppSpec, request: &Request) -> Option<String> {
 
 /// Vrai si l'action produit un effet aujourd'hui.
 ///
-/// Installer, mettre à jour, ouvrir l'application, choisir une version, voir les notes,
-/// toutes les versions et masquer n'existent pas encore : elles restent désactivées.
-pub fn available(app: &AppSpec, request: &Request) -> bool {
-    matches!(request, Request::Refresh) || url_for(app, request).is_some()
+/// `Open`, `ChooseVersion`, `Notes`, `AllVersions` et `Hide` n'existent pas encore : elles
+/// restent désactivées. `Install` n'a de sens que si rien n'est installé et qu'une release
+/// est publiée ; `Update` seulement quand une version plus récente existe.
+pub fn available(row: &Row, request: &Request) -> bool {
+    match request {
+        Request::Refresh => true,
+        Request::Install(_) => {
+            matches!(row.state(), State::NotInstalled) && row.available.is_some()
+        }
+        Request::Update(_) => matches!(row.state(), State::UpdateAvailable { .. }),
+        _ => url_for(&row.app, request).is_some(),
+    }
 }

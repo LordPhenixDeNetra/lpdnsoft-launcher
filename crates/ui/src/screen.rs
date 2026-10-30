@@ -5,7 +5,7 @@ use egui::{
     Stroke, TextEdit, Ui, vec2,
 };
 use lpdnsoft_i18n::{Localizer, t};
-use lpdnsoft_launcher_core::{AppSpec, Catalog, Platform, Row, State};
+use lpdnsoft_launcher_core::{Catalog, Platform, Row, State};
 use lpdnsoft_ui::{Tone, status_color};
 
 use crate::links;
@@ -26,11 +26,30 @@ pub enum Request {
     Hide(String),
 }
 
+/// Étape d'une installation en cours.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Step {
+    Downloading,
+    Installing,
+    Done,
+    Failed(String),
+}
+
+/// Ce que le pont raconte pendant une installation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Job {
+    pub app: String,
+    pub step: Step,
+    pub done: u64,
+    pub total: Option<u64>,
+}
+
 /// Ce que le pont renvoie à l'écran.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Update {
     Checking,
     Catalog { rows: Vec<Row>, cached: bool },
+    Job(Job),
     Failed(String),
 }
 
@@ -54,6 +73,8 @@ pub struct Screen {
     pub check: Check,
     /// Échec d'une action immédiate (navigateur indisponible), effacé à la passe suivante.
     pub notice: Option<String>,
+    /// Installation en cours, ou dernière installation terminée.
+    pub job: Option<Job>,
 }
 
 impl Screen {
@@ -66,13 +87,18 @@ impl Screen {
             outbox: Vec::new(),
             check: Check::Never,
             notice: None,
+            job: None,
         }
     }
 
     pub fn apply(&mut self, update: Update) {
         self.notice = None;
         match update {
-            Update::Checking => self.check = Check::Running,
+            Update::Checking => {
+                // Une nouvelle vérification efface l'installation terminée.
+                self.job = None;
+                self.check = Check::Running;
+            }
             Update::Catalog { rows, cached } => {
                 self.catalog = Catalog::new(rows);
                 self.check = if cached {
@@ -81,6 +107,7 @@ impl Screen {
                     Check::Done
                 };
             }
+            Update::Job(job) => self.job = Some(job),
             Update::Failed(detail) => self.check = Check::Failed(detail),
         }
     }
@@ -93,7 +120,44 @@ impl Screen {
         self.header(ui);
         ui.add_space(12.0);
         self.table(ui);
+        self.job_line(ui);
         self.footer(ui);
+    }
+
+    /// Ligne d'état de l'installation en cours, entre la liste et le pied de page.
+    fn job_line(&self, ui: &mut Ui) {
+        let Some(job) = &self.job else {
+            return;
+        };
+        let tone = match &job.step {
+            Step::Downloading | Step::Installing => Tone::Busy,
+            Step::Done => Tone::On,
+            Step::Failed(_) => Tone::Alert,
+        };
+        let text = match &job.step {
+            Step::Downloading => {
+                let percent = match job.total {
+                    Some(total) if total > 0 => (job.done.saturating_mul(100) / total).min(100),
+                    _ => 0,
+                };
+                t!(
+                    &self.loc,
+                    "ui-job-downloading",
+                    app = job.app.as_str(),
+                    percent = percent as i64
+                )
+            }
+            Step::Installing => t!(&self.loc, "ui-job-installing", app = job.app.as_str()),
+            Step::Done => t!(&self.loc, "ui-job-done", app = job.app.as_str()),
+            Step::Failed(detail) => t!(
+                &self.loc,
+                "ui-job-failed",
+                app = job.app.as_str(),
+                detail = detail.as_str()
+            ),
+        };
+        ui.add_space(6.0);
+        ui.label(RichText::new(text).size(12.0).color(status_color(tone)));
     }
 
     fn header(&mut self, ui: &mut Ui) {
@@ -222,7 +286,7 @@ impl Screen {
         ui.label(RichText::new(&row.app.author).small());
 
         let (label, request) = action_of(&self.loc, row, state);
-        let enabled = links::available(&row.app, &request);
+        let enabled = links::available(row, &request);
         let hint = t!(&self.loc, "ui-unavailable");
         ui.horizontal(|ui| {
             let response = ui.add_enabled(enabled, Button::new(RichText::new(label).strong()));
@@ -262,7 +326,7 @@ impl Screen {
             (t!(&self.loc, "ui-menu-hide"), Request::Hide(id.clone())),
         ];
         for (label, request) in entries {
-            if let Some(chosen) = menu_entry(ui, label, request, &row.app, &hint) {
+            if let Some(chosen) = menu_entry(ui, label, request, row, &hint) {
                 self.outbox.push(chosen);
                 ui.close();
             }
@@ -342,10 +406,10 @@ fn menu_entry(
     ui: &mut Ui,
     label: String,
     request: Request,
-    app: &AppSpec,
+    row: &Row,
     hint: &str,
 ) -> Option<Request> {
-    let enabled = links::available(app, &request);
+    let enabled = links::available(row, &request);
     let response = ui.add_enabled(enabled, Button::new(label).frame(false));
     let response = if enabled {
         response
