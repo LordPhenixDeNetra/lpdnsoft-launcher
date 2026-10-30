@@ -6,6 +6,22 @@
 - **Règle :** chaque étape se termine par `cargo xtask ci` en exit 0 ; une étape non verte
   ne passe pas à la suivante.
 
+## État d'avancement
+
+| Étape | État |
+|---|---|
+| 1 — classification des statuts HTTP | **fait** : `classify`, 5 tests |
+| 2 — assemblage du pont | **fait** : `assemble`, 4 tests |
+| 3 — aides pures de l'écran | à faire |
+| 4 — états de l'écran | à faire |
+| 5 — manifeste livré | à faire |
+| 6 — vérification manuelle | à faire |
+| 7 — verrous CI (`--locked`, MSRV) | **fait** : `xtask`, job `msrv` |
+| 8 — artefacts de build | **fait** : job `build` |
+| 9 — décision de release | à faire, avec la première fonction d'installation |
+
+**35 tests** au total après les étapes 1 et 2, `cargo xtask ci` vert.
+
 ---
 
 ## Étape 1 — Rendre la classification des statuts HTTP testable

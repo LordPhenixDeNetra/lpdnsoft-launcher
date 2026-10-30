@@ -55,6 +55,11 @@ Aucun travail n'est livré sans ses tests.
   `fmt --check`, `clippy -D warnings`, tests, `cargo deny check`). Un test rouge ne se
   reporte pas à plus tard.
 - **Un test nouveau échoue sans le changement** ; sinon il ne prouve rien.
+- **Placer les tests selon leur nature** : la logique privée (`assemble`, les aides
+  d'affichage) se teste dans un `#[cfg(test)] mod tests` au bas du fichier ; l'API publique
+  (`Version`, `Manifest`, `classify`, `Screen`) se teste dans `crates/<crate>/tests/*.rs`.
+  Un test d'intégration ne voit que ce que le crate expose : on n'élargit jamais une API
+  pour pouvoir la tester.
 - **Ne jamais désactiver** un test existant pour faire passer une modification : le
   corriger, ou expliquer pourquoi il n'a plus de sens.
 - **Indiquer dans la livraison** la commande lancée et son résultat exact, avec les

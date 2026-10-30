@@ -55,6 +55,14 @@ soixante requêtes par heure. Ces chemins sont vérifiés à la main, et la vér
    dans la suite.
 8. **Un test existant ne se désactive pas** pour faire passer un changement : on le
    corrige, ou on explique dans la revue pourquoi il n'a plus de sens.
+9. **Placer les tests selon leur nature.** La logique privée se teste dans un
+   `#[cfg(test)] mod tests` au bas du fichier, seule façon d'atteindre `assemble` ou
+   `parse` sans élargir l'API. L'API publique se teste dans `crates/<crate>/tests/*.rs`,
+   pour que le contrat survive aux remaniements internes. Un test d'intégration ne voit
+   que ce que le crate expose : on n'ouvre jamais une fonction pour pouvoir la tester.
+10. **Les fichiers de tests d'intégration portent l'autorisation d'échouer** :
+    `#![allow(clippy::unwrap_used, clippy::expect_used)]`, puisqu'un test échoue en
+    paniquant et que `allow-unwrap-in-tests` ne couvre pas leurs fonctions auxiliaires.
 
 ## 4. Définition de « terminé »
 
