@@ -1,0 +1,17 @@
+[package]
+name = "lpdnsoft-launcher-system"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Version installée sur le poste, pour le launcher LPDNSoft"
+
+[lints]
+workspace = true
+
+[dependencies]
+lpdnsoft-launcher-core = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+winreg = { workspace = true }
