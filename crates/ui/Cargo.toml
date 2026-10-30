@@ -11,6 +11,7 @@ description = "Interface egui du launcher LPDNSoft"
 workspace = true
 
 [dependencies]
+lpdnsoft-launcher-cache = { workspace = true }
 lpdnsoft-launcher-core = { workspace = true }
 lpdnsoft-launcher-github = { workspace = true }
 lpdnsoft-launcher-system = { workspace = true }
