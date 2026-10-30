@@ -87,8 +87,8 @@ une requête conditionnelle par application), la version installée (registre Wi
 `dpkg-query`/`rpm -q` sur Linux, `pkgutil` sur macOS), le tout mis en cache avec son empreinte
 (ADR 0003). **Installer** et **Mettre à jour** téléchargent le paquet, vérifient son empreinte,
 l'installent avec l'élévation du système et affichent chaque étape (ADR 0004, ADR 0005).
+**Ouvrir** lance l'application installée, dont le chemin est résolu par système.
 
-Ce qui n'existe pas encore : aucune installation n'a été vérifiée sur une vraie machine
-(étape 5 du plan d'installation) ; la liste se rafraîchit après coup et devrait alors montrer
-la nouvelle version. Une application installée hors gestionnaire de paquets s'affiche
-« version inconnue ».
+Ce qui n'existe pas encore : l'installation réelle n'a été vérifiée que sous Linux
+(`docs/runbooks/verification-installation.md`) ; Windows et macOS restent à essayer. Une
+application installée hors gestionnaire de paquets s'affiche « version inconnue ».

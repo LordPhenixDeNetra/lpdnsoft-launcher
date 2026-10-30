@@ -5,6 +5,7 @@
 
 use crate::screen::Request;
 use lpdnsoft_launcher_core::{AppSpec, Row, State};
+use std::path::Path;
 
 /// Adresse à ouvrir pour cette requête, s'il y en a une.
 pub fn url_for(app: &AppSpec, request: &Request) -> Option<String> {
@@ -17,16 +18,18 @@ pub fn url_for(app: &AppSpec, request: &Request) -> Option<String> {
 
 /// Vrai si l'action produit un effet aujourd'hui.
 ///
-/// `Open`, `ChooseVersion`, `Notes`, `AllVersions` et `Hide` n'existent pas encore : elles
-/// restent désactivées. `Install` n'a de sens que si rien n'est installé et qu'une release
-/// est publiée ; `Update` seulement quand une version plus récente existe.
-pub fn available(row: &Row, request: &Request) -> bool {
+/// `ChooseVersion`, `Notes`, `AllVersions` et `Hide` n'existent pas encore : elles restent
+/// désactivées. `Install` n'a de sens que si rien n'est installé et qu'une release est
+/// publiée ; `Update` seulement quand une version plus récente existe ; `Open` seulement
+/// quand l'exécutable a été trouvé sur le disque.
+pub fn available(row: &Row, request: &Request, openable: Option<&Path>) -> bool {
     match request {
         Request::Refresh => true,
         Request::Install(_) => {
             matches!(row.state(), State::NotInstalled) && row.available.is_some()
         }
         Request::Update(_) => matches!(row.state(), State::UpdateAvailable { .. }),
+        Request::Open(_) => openable.is_some(),
         _ => url_for(&row.app, request).is_some(),
     }
 }

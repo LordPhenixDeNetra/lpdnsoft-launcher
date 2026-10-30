@@ -31,6 +31,7 @@ ui-foot-done = VÉRIFIÉ · VIA GITHUB
 ui-foot-cached = VÉRIFIÉ · DONNÉES EN CACHE
 ui-foot-failed = ÉCHEC : { $detail }
 ui-loading = Récupération des releases…
+ui-menu-open = Ouvrir l'application
 ui-unavailable = Disponible dans une prochaine version
 ui-job-downloading = Téléchargement de { $app } — { $percent } %
 ui-job-installing = Installation de { $app }…

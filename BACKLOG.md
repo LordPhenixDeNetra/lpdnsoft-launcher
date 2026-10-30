@@ -41,13 +41,13 @@ Règles de tenue :
 | **P1 — Télécharger et vérifier `SHA256SUMS`** | terminée sur branche, revue en attente : parseur d'empreintes, calcul par blocs, reprise par `Range`, refus d'un fichier de mauvaise taille ou de mauvaise empreinte, 12 tests dont 5 contre un serveur HTTP local | `crates/download`, ADR 0004 |
 | **P2 — Détection Linux et macOS** | terminée sur branche, revue en attente : `dpkg-query`, `rpm -q`, `pkgutil`, noms de paquet dans le manifeste, 15 tests sans machine cible | `crates/system`, spécification de détection |
 | **P3 — Installer et mettre à jour** | **étapes 1 à 4 faites**, étape 5 **partielle** : installation réelle vérifiée sous Linux (Ubuntu 26.04 en WSL, aNkou 1.0.1 installé, service activé, version relue, puis purgé) ; Windows et macOS restent à faire | `crates/install`, `crates/ui`, ADR 0005, `docs/runbooks/verification-installation.md` |
+| **P4 — Ouvrir l'application installée** | terminée sur branche : registre Windows (`DisplayIcon`, `InstallLocation`, puis conventions), `/usr/bin`, `/Applications` ; bouton principal et entrée de menu, 8 tests | `crates/system`, `crates/ui` |
 
 ## À faire
 
 | Priorité | Tâche | Effort | Prérequis |
 |---|---|---|---|
 | **P3 fin** | Vérifier l'installation réelle sur Windows et macOS (Linux est fait) | ~1 h | un poste Windows élevable et un Mac |
-| **P4** | Ouvrir l'application installée | ~2 h | chemin d'installation lu par OS |
 | **P5** | Toutes les versions et notes de version | ~4 h | conserver les anciennes releases |
 | **P6** | `pull_request_template.md` et `CONTRIBUTING.md`, dans les trois dépôts | ~30 min | — |
 | **P7** | Release du launcher : paquets, `SHA256SUMS`, publication | 1-2 j | P3, et la signature si certificats |
@@ -87,3 +87,4 @@ d'installation devront le dire.
 | 2026-10-30 | 0.4 : téléchargement vérifié (`Range`, `SHA256SUMS`, publication atomique), ADR 0004 |
 | 2026-10-30 | 0.4 : détection Linux (`dpkg-query`, `rpm -q`) et macOS (`pkgutil`), noms de paquet dans le manifeste |
 | 2026-10-30 | 0.4 : installation — plan par système, élévation `pkexec`/UAC/`osascript`, exécution, ADR 0005 |
+| 2026-10-30 | 0.4 : ouverture de l'application installée, avec le chemin résolu par système |

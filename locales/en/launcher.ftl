@@ -31,6 +31,7 @@ ui-foot-done = CHECKED · VIA GITHUB
 ui-foot-cached = CHECKED · CACHED DATA
 ui-foot-failed = FAILED: { $detail }
 ui-loading = Fetching releases…
+ui-menu-open = Open the app
 ui-unavailable = Available in a future version
 ui-job-downloading = Downloading { $app } — { $percent } %
 ui-job-installing = Installing { $app }…

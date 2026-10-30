@@ -7,6 +7,8 @@ use egui::{
 use lpdnsoft_i18n::{Localizer, t};
 use lpdnsoft_launcher_core::{Catalog, Platform, Row, State};
 use lpdnsoft_ui::{Tone, status_color};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use crate::links;
 
@@ -48,7 +50,12 @@ pub struct Job {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Update {
     Checking,
-    Catalog { rows: Vec<Row>, cached: bool },
+    Catalog {
+        rows: Vec<Row>,
+        cached: bool,
+        /// Application → exécutable réellement présent sur le disque.
+        openable: HashMap<String, PathBuf>,
+    },
     Job(Job),
     Failed(String),
 }
@@ -75,6 +82,8 @@ pub struct Screen {
     pub notice: Option<String>,
     /// Installation en cours, ou dernière installation terminée.
     pub job: Option<Job>,
+    /// Exécutables trouvés lors de la dernière vérification.
+    pub openable: HashMap<String, PathBuf>,
 }
 
 impl Screen {
@@ -88,6 +97,7 @@ impl Screen {
             check: Check::Never,
             notice: None,
             job: None,
+            openable: HashMap::new(),
         }
     }
 
@@ -99,8 +109,13 @@ impl Screen {
                 self.job = None;
                 self.check = Check::Running;
             }
-            Update::Catalog { rows, cached } => {
+            Update::Catalog {
+                rows,
+                cached,
+                openable,
+            } => {
                 self.catalog = Catalog::new(rows);
+                self.openable = openable;
                 self.check = if cached {
                     Check::DoneCached
                 } else {
@@ -286,7 +301,8 @@ impl Screen {
         ui.label(RichText::new(&row.app.author).small());
 
         let (label, request) = action_of(&self.loc, row, state);
-        let enabled = links::available(row, &request);
+        let openable = self.openable.get(&row.app.id).map(PathBuf::as_path);
+        let enabled = links::available(row, &request, openable);
         let hint = t!(&self.loc, "ui-unavailable");
         ui.horizontal(|ui| {
             let response = ui.add_enabled(enabled, Button::new(RichText::new(label).strong()));
@@ -306,6 +322,9 @@ impl Screen {
         let id = row.app.id.clone();
         let hint = t!(&self.loc, "ui-unavailable");
         let entries = [
+            // « Ouvrir » est aussi dans le menu : il reste accessible quand la ligne propose
+            // déjà « Mettre à jour », où il n'a pas sa place comme action principale.
+            (t!(&self.loc, "ui-menu-open"), Request::Open(id.clone())),
             (
                 t!(&self.loc, "ui-menu-version"),
                 Request::ChooseVersion(id.clone()),
@@ -326,7 +345,8 @@ impl Screen {
             (t!(&self.loc, "ui-menu-hide"), Request::Hide(id.clone())),
         ];
         for (label, request) in entries {
-            if let Some(chosen) = menu_entry(ui, label, request, row, &hint) {
+            let openable = self.openable.get(&row.app.id).map(PathBuf::as_path);
+            if let Some(chosen) = menu_entry(ui, label, request, row, &hint, openable) {
                 self.outbox.push(chosen);
                 ui.close();
             }
@@ -408,8 +428,9 @@ fn menu_entry(
     request: Request,
     row: &Row,
     hint: &str,
+    openable: Option<&Path>,
 ) -> Option<Request> {
-    let enabled = links::available(row, &request);
+    let enabled = links::available(row, &request, openable);
     let response = ui.add_enabled(enabled, Button::new(label).frame(false));
     let response = if enabled {
         response
