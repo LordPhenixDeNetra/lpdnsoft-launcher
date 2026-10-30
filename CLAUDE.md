@@ -22,7 +22,7 @@ Launcher de la suite **LPDNSoft** (Rust, egui 0.36, Windows/Linux/macOS). Décis
 - `crates/download` — `lpdnsoft-launcher-download` : reprise par `Range`, vérification
   `SHA256SUMS` et publication atomique du paquet (ADR 0004).
 - `crates/install` — `lpdnsoft-launcher-install` : plan par système (MSI, deb, rpm, pkg),
-  élévation `pkexec`/UAC/`osascript`, exécution injectable (ADR 0005). **Pas encore branché.**
+  élévation `pkexec`/UAC/`osascript`, exécution injectable (ADR 0005).
 - `crates/ui` — `lpdnsoft-launcher-ui` : fenêtre eframe, liste, pastilles d'état, menu par
   application ; `bridge.rs` fait tourner la vérification sur un fil à part.
 - `apps/launcher` — `lpdnsoft-launcher` : arguments (`--lang en|fr`), journal, lancement.
@@ -85,11 +85,10 @@ Plan d'application : `docs/superpowers/plans/2026-10-30-plan-tests-unitaires.md`
 v0.4 lit de **vraies données** : les releases publiées sur GitHub (`GET /releases/latest`,
 une requête conditionnelle par application), la version installée (registre Windows,
 `dpkg-query`/`rpm -q` sur Linux, `pkgutil` sur macOS), le tout mis en cache avec son empreinte
-(ADR 0003). Le téléchargement vérifié existe (`crates/download`, ADR 0004) et l'installation
-aussi (`crates/install`, ADR 0005 : plan par système, élévation, exécution), mais **aucun des
-deux n'est branché à l'interface**.
+(ADR 0003). **Installer** et **Mettre à jour** téléchargent le paquet, vérifient son empreinte,
+l'installent avec l'élévation du système et affichent chaque étape (ADR 0004, ADR 0005).
 
-Ce qui n'existe pas encore : aucun clic n'installe ni ne met à jour. Ces actions sont
-**désactivées** dans l'interface, avec une infobulle qui l'annonce ; seuls « Site web » et
-« Dépôt GitHub » agissent, en ouvrant le navigateur. Une application installée hors
-gestionnaire de paquets s'affiche « version inconnue ».
+Ce qui n'existe pas encore : aucune installation n'a été vérifiée sur une vraie machine
+(étape 5 du plan d'installation) ; la liste se rafraîchit après coup et devrait alors montrer
+la nouvelle version. Une application installée hors gestionnaire de paquets s'affiche
+« version inconnue ».

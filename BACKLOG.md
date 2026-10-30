@@ -40,13 +40,13 @@ Règles de tenue :
 |---|---|---|
 | **P1 — Télécharger et vérifier `SHA256SUMS`** | terminée sur branche, revue en attente : parseur d'empreintes, calcul par blocs, reprise par `Range`, refus d'un fichier de mauvaise taille ou de mauvaise empreinte, 12 tests dont 5 contre un serveur HTTP local | `crates/download`, ADR 0004 |
 | **P2 — Détection Linux et macOS** | terminée sur branche, revue en attente : `dpkg-query`, `rpm -q`, `pkgutil`, noms de paquet dans le manifeste, 15 tests sans machine cible | `crates/system`, spécification de détection |
-| **P3 — Installer et mettre à jour** | **étapes 1 à 3 faites** (plan, élévation, exécution), 13 tests ; les étapes 4 (interface) et 5 (vérification sur les trois systèmes) demandent une release réelle | `crates/install`, ADR 0005 |
+| **P3 — Installer et mettre à jour** | **étapes 1 à 4 faites** : plan, élévation, exécution, et branchement dans l'interface (téléchargement → vérification → installation, avec l'étape affichée) ; reste l'étape 5, l'essai réel sur les trois systèmes | `crates/install`, `crates/ui`, ADR 0005 |
 
 ## À faire
 
 | Priorité | Tâche | Effort | Prérequis |
 |---|---|---|---|
-| **P3 suite** | Brancher l'installation sur l'interface : télécharger, vérifier, planifier, exécuter, afficher chaque étape | ~1 j | étapes 1-3, une release à installer |
+| **P3 fin** | Vérifier une installation réelle sur Windows, Debian/Fedora et macOS | ~2 h | une release à installer |
 | **P4** | Ouvrir l'application installée | ~2 h | chemin d'installation lu par OS |
 | **P5** | Toutes les versions et notes de version | ~4 h | conserver les anciennes releases |
 | **P6** | `pull_request_template.md` et `CONTRIBUTING.md`, dans les trois dépôts | ~30 min | — |

@@ -26,13 +26,14 @@ Ce qui marche :
 - **Actions honnêtes** : ce qui n'existe pas est désactivé avec une infobulle ; « Site web »
   et « Dépôt GitHub » ouvrent le navigateur ;
 - **Pied de page honnête** : jamais vérifié / en cours / vérifié / données en cache / échec ;
-- 93 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
+- **Installation branchée** : `Installer` et `Mettre à jour` téléchargent le paquet, vérifient
+  son empreinte, l'installent avec l'élévation du système, et affichent chaque étape ;
+- 103 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
 
 Ce qui n'existe pas encore :
 
-- l'installation existe en bibliothèque (`crates/install`, ADR 0005 : plan par système,
-  élévation `pkexec`/UAC/`osascript`, exécution) mais n'est branchée ni au téléchargement ni
-  à l'interface ; aucun clic n'installe donc encore ;
+- aucune vérification d'installation réelle sur les trois systèmes (étape 5 du plan) : le
+  code est écrit et testé, le premier essai réel reste à faire avec une release à installer ;
 - une application installée hors gestionnaire de paquets (archive, binaire copié, Flatpak)
   reste invisible : l'interface affiche alors « version inconnue ».
 
