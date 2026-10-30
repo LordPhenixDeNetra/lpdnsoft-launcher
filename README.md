@@ -5,7 +5,9 @@ installée et la dernière publiée, et les installe ou les met à jour depuis l
 
 Référence visuelle et fonctionnelle : le launcher ArtCraft (cité par la spec d'aNkou §1).
 
-![Le launcher en v0.2, sur données réelles](docs/capture.png)
+Suivi des tâches, priorités et décisions en attente : [`BACKLOG.md`](BACKLOG.md).
+
+![Le launcher en v0.3, avec son cache](docs/capture.png)
 
 ## État — v0.3
 
