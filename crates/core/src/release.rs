@@ -5,7 +5,9 @@ use crate::app::{AppSpec, AssetPattern, Platform};
 use crate::version::{Version, VersionError};
 
 /// Jour de publication, tel qu'affiché dans la liste.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub struct Date {
     pub year: i32,
     pub month: u8,
@@ -31,7 +33,7 @@ impl Date {
 }
 
 /// Un fichier joint à une release.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Asset {
     pub name: String,
     pub url: String,
@@ -39,7 +41,7 @@ pub struct Asset {
 }
 
 /// Une release publiée d'une application.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Release {
     pub tag: String,
     pub version: Version,
