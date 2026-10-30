@@ -1,11 +1,16 @@
 //! Tests du contrat public : classification des statuts HTTP.
-#![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use lpdnsoft_launcher_github::{GithubError, classify};
+use lpdnsoft_launcher_github::{GithubError, Outcome, classify};
 
 #[test]
-fn accepts_200() {
-    assert_eq!(classify(200), Ok(()));
+fn accepts_200_as_a_new_release() {
+    assert_eq!(classify(200), Ok(Outcome::New));
+}
+
+#[test]
+fn accepts_304_as_a_still_valid_cache() {
+    // Un 304 n'est pas une erreur : c'est la réponse qui ne consomme pas le quota.
+    assert_eq!(classify(304), Ok(Outcome::CacheStillValid));
 }
 
 #[test]
