@@ -43,6 +43,7 @@ Règles de tenue :
 | Tâche | État | Où |
 |---|---|---|
 | **P5 — Toutes les versions et notes de version** | terminée sur branche : notes lues dans la release (aucune requête), historique chargé à la demande, fenêtre de détail, 10 tests | `crates/core`, `crates/github`, `crates/ui` |
+| **P7 — Release du launcher** | terminée sur branche : métadonnées `.deb`/`.rpm`, MSI WiX, `.pkg` macOS, workflow de release avec `SHA256SUMS`, runbook, 6 tests garde-fous ; **aucun paquet construit ici**, faute d'outils | `packaging/`, `.github/workflows/release.yml` |
 | **P6 — Modèle de PR et CONTRIBUTING** | terminée sur branche : un modèle et un guide par dépôt (launcher, ankou, lpdnsoft-libs) | trois dépôts |
 
 ## À faire
@@ -50,7 +51,6 @@ Règles de tenue :
 | Priorité | Tâche | Effort | Prérequis |
 |---|---|---|---|
 | **P3 fin** | Vérifier l'installation réelle sur Windows et macOS (Linux est fait) | ~1 h | un poste Windows élevable et un Mac |
-| **P7** | Release du launcher : paquets, `SHA256SUMS`, publication | 1-2 j | P3, et la signature si certificats |
 
 ## Bloqué
 
