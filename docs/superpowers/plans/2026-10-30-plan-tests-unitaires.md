@@ -130,6 +130,56 @@ notés dans la réponse de livraison.
 
 ---
 
+## Étape 7 — Fermer les deux trous de la CI
+
+**Problème.** La CI ne vérifie ni le verrou de dépendances ni la version minimale de Rust.
+Un `Cargo.lock` désynchronisé, ou un appel à une API trop récente, passe aujourd'hui sans
+bruit.
+
+**Changement.**
+
+- `xtask` : `--locked` ajouté aux étapes Compilation (`clippy`) et Tests ;
+- workflow : job `msrv` qui compile avec la version exacte de `rust-version` (1.95) ;
+- workflow : `concurrency` avec annulation de l'exécution obsolète.
+
+**Fichiers.** `xtask/src/main.rs`, `.github/workflows/ci.yml`
+
+**Vérification.** `cargo xtask ci` vert en local, puis le job `msrv` vert sur la PR. Le
+verrou est vérifié en le désynchronisant volontairement une fois — la CI doit refuser.
+
+**Fini quand.** les trois contrôles sont visibles dans l'exécution de la PR.
+
+---
+
+## Étape 8 — Produire le binaire en artefact
+
+**Problème.** Rien ne prouve qu'un binaire se construit sur les trois systèmes autrement
+qu'en compilant les tests ; aucune interface modifiée n'est essayable sans compiler.
+
+**Changement.** Job `build` : `cargo build --release -p lpdnsoft-launcher --locked` sur la
+matrice, puis `actions/upload-artifact` avec `lpdnsoft-launcher-<os>`.
+
+**Fichiers.** `.github/workflows/ci.yml`
+
+**Vérification.** L'artefact est téléchargeable depuis l'exécution de la PR et se lance sur
+Windows.
+
+**Fini quand.** trois artefacts existent au vert, aucun au rouge.
+
+---
+
+## Étape 9 — Décider de la release, plus tard
+
+**Problème.** Le launcher n'a pas de chaîne de publication, alors qu'il devra se distribuer
+lui-même le jour où il installera quoi que ce soit.
+
+**Changement.** Aucun code. Une entrée dans l'ADR 0002 ou un ADR 0003 au moment de la
+première fonction d'installation : formats, nommage, empreintes, essai d'installation.
+
+**Fini quand.** la décision est écrite **avant** le premier paquet produit, pas après.
+
+---
+
 ## Récapitulatif
 
 | Étape | Tests ajoutés | Nature | Risque |
@@ -140,6 +190,9 @@ notés dans la réponse de livraison.
 | 4 | 3 | interface | faible (libellés) |
 | 5 | 2 | garde-fou | faible |
 | 6 | 0 | documentation | — |
+| 7 | 0 | CI/CD : verrous | faible |
+| 8 | 0 | CI/CD : artefacts | moyen : temps et espace CI |
+| 9 | 0 | décision écrite | — |
 | **Total** | **19** | | **26 → 45 tests** |
 
 Ordre imposé : 1 et 2 changent du code, 3 à 5 n'ajoutent que des tests. Si le temps manque,
