@@ -18,6 +18,8 @@ Launcher de la suite **LPDNSoft** (Rust, egui 0.36, Windows/Linux/macOS). Décis
   désinstallation sous Windows ; rien hors Windows pour l'instant.
 - `crates/cache` — `lpdnsoft-launcher-cache` : dernière release connue et empreinte, un
   fichier par application, écriture atomique (ADR 0003).
+- `crates/download` — `lpdnsoft-launcher-download` : reprise par `Range`, vérification
+  `SHA256SUMS` et publication atomique du paquet (ADR 0004).
 - `crates/ui` — `lpdnsoft-launcher-ui` : fenêtre eframe, liste, pastilles d'état, menu par
   application ; `bridge.rs` fait tourner la vérification sur un fil à part.
 - `apps/launcher` — `lpdnsoft-launcher` : arguments (`--lang en|fr`), journal, lancement.
@@ -83,7 +85,8 @@ applications est `apps.json`, embarqué et validé au démarrage. Chaque répons
 cache avec son empreinte : un 304 ne coûte rien au quota, et une panne réseau retombe sur la
 dernière réponse connue, annoncée comme telle (ADR 0003).
 
-Ce qui n'existe pas encore : le téléchargement, la vérification `SHA256SUMS`, l'installation
-et la mise à jour. Ces actions sont **désactivées** dans l'interface, avec une infobulle qui
+Ce qui n'existe pas encore : le téléchargement vérifié est écrit (`crates/download`) mais
+n'est branché ni à l'interface ni à une installation ; il n'existe donc aucune installation
+ni mise à jour. Ces actions sont **désactivées** dans l'interface, avec une infobulle qui
 l'annonce ; seuls « Site web » et « Dépôt GitHub » agissent, en ouvrant le navigateur.
 La détection des versions installées n'est pas écrite hors Windows.

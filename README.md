@@ -9,7 +9,7 @@ Suivi des tâches, priorités et décisions en attente : [`BACKLOG.md`](BACKLOG.
 
 ![Le launcher en v0.3, avec son cache](docs/capture.png)
 
-## État — v0.3
+## État — v0.4
 
 Ce qui marche :
 
@@ -18,16 +18,18 @@ Ce qui marche :
 - **Vraie version installée** sous Windows, lue dans les clés de désinstallation du registre ;
 - **Cache conditionnel** : l'empreinte part dans `If-None-Match`, un 304 ne coûte rien au
   quota, et une panne réseau retombe sur la dernière réponse connue ;
+- **Téléchargement vérifié** (`crates/download`) : reprise par `Range`, empreinte `SHA-256`
+  comparée à `SHA256SUMS`, publication atomique — pas encore branché à l'interface ;
 - **États calculés** : à jour, mise à jour disponible, non installée, version inconnue ;
 - **Interface complète** : pastilles d'état, recherche, menu par application, deux langues ;
 - **Actions honnêtes** : ce qui n'existe pas est désactivé avec une infobulle ; « Site web »
   et « Dépôt GitHub » ouvrent le navigateur ;
 - **Pied de page honnête** : jamais vérifié / en cours / vérifié / données en cache / échec ;
-- 55 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
+- 67 tests, `fmt` et `clippy -D warnings` propres, `cargo deny` sans avis.
 
 Ce qui n'existe pas encore :
 
-- aucun téléchargement, aucune vérification `SHA256SUMS`, aucune installation ni mise à jour ;
+- aucune installation ni mise à jour : le téléchargement vérifié n'est pas encore branché ;
 - aucune détection hors Windows : sur Linux et macOS, toute application paraît non installée.
 
 ## Compiler et lancer
