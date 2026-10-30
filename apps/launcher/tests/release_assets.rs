@@ -215,3 +215,18 @@ fn the_windows_long_paths_step_runs_before_any_checkout() {
         "le pas « chemins longs » doit s'exécuter à la racine du runner"
     );
 }
+
+#[test]
+fn the_rpm_command_uses_the_flags_the_tool_accepts() {
+    // `cargo generate-rpm` n'a pas de `--manifest-path` : il connaît `-p <paquet>`. La
+    // première rédaction du workflow supposait le contraire et la publication échouait
+    // après trois minutes de compilation.
+    assert!(
+        RELEASE.contains("cargo generate-rpm -p lpdnsoft-launcher"),
+        "l'outil attend un nom de paquet avec -p"
+    );
+    assert!(
+        !RELEASE.contains("generate-rpm --manifest-path"),
+        "cargo generate-rpm ne connaît pas --manifest-path"
+    );
+}
