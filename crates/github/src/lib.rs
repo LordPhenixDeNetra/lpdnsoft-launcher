@@ -70,6 +70,26 @@ pub fn client() -> Result<reqwest::Client, GithubError> {
         .map_err(|e| GithubError::Network(e.to_string()))
 }
 
+/// Sort d'une réponse d'après son statut : seul 200 porte une release lisible.
+pub fn classify(status: u16) -> Result<(), GithubError> {
+    match status {
+        200 => Ok(()),
+        404 => Err(GithubError::NoRelease),
+        403 | 429 => Err(GithubError::RateLimited),
+        code => Err(GithubError::Network(format!("GitHub a répondu {code}"))),
+    }
+}
+
+/// Lit le corps JSON d'une release et le convertit.
+///
+/// Public pour être testable sans réseau : c'est le contrat de lecture de l'API, et le
+/// seul endroit où la forme des réponses GitHub est connue.
+pub fn parse_release(json: &str, app: &AppSpec) -> Result<Release, GithubError> {
+    let raw: ReleaseJson =
+        serde_json::from_str(json).map_err(|e| GithubError::Decode(e.to_string()))?;
+    raw.into_release(app)
+}
+
 /// Dernière release publiée d'une application.
 pub async fn latest_release(
     client: &reqwest::Client,
@@ -81,65 +101,10 @@ pub async fn latest_release(
         .send()
         .await
         .map_err(|e| GithubError::Network(e.to_string()))?;
-    match response.status().as_u16() {
-        200 => {}
-        404 => return Err(GithubError::NoRelease),
-        403 | 429 => return Err(GithubError::RateLimited),
-        code => return Err(GithubError::Network(format!("GitHub a répondu {code}"))),
-    }
-    let json: ReleaseJson = response
-        .json()
+    classify(response.status().as_u16())?;
+    let body = response
+        .text()
         .await
         .map_err(|e| GithubError::Decode(e.to_string()))?;
-    json.into_release(app)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use lpdnsoft_launcher_core::AssetPattern;
-
-    fn app() -> AppSpec {
-        AppSpec {
-            id: "ankou".into(),
-            name: "aNkou".into(),
-            tagline: "VPN".into(),
-            author: "LPDNSoft".into(),
-            repo: "LordPhenixDeNetra/ankou".into(),
-            homepage: None,
-            asset: AssetPattern::new("ankou-{version}-{os}-{arch}.{ext}"),
-            hidden: false,
-        }
-    }
-
-    #[test]
-    fn maps_a_github_release() {
-        let json: ReleaseJson = serde_json::from_str(
-            r#"{
-                "tag_name": "v1.0.1",
-                "published_at": "2026-10-28T09:12:00Z",
-                "html_url": "https://github.com/LordPhenixDeNetra/ankou/releases/tag/v1.0.1",
-                "assets": [
-                    {"name": "ankou-1.0.1-windows-x86_64.msi", "browser_download_url": "https://example.test/a.msi", "size": 4194304},
-                    {"name": "SHA256SUMS", "browser_download_url": "https://example.test/SHA256SUMS", "size": 231}
-                ]
-            }"#,
-        )
-        .unwrap();
-        let release = json.into_release(&app()).unwrap();
-        assert_eq!(release.version.to_string(), "1.0.1");
-        assert_eq!(release.published.unwrap().short(), "28/10/2026");
-        assert_eq!(release.assets.len(), 2);
-        assert_eq!(release.checksums().unwrap().name, "SHA256SUMS");
-        assert!(release.notes_url.ends_with("/releases/tag/v1.0.1"));
-    }
-
-    #[test]
-    fn refuses_a_tag_that_is_not_a_version() {
-        let json: ReleaseJson = serde_json::from_str(r#"{"tag_name": "nightly"}"#).unwrap();
-        assert!(matches!(
-            json.into_release(&app()),
-            Err(GithubError::Version(_))
-        ));
-    }
+    parse_release(&body, app)
 }
