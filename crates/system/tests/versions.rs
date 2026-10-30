@@ -16,6 +16,8 @@ fn removes_the_debian_epoch_and_revision() {
         version_from_deb("2:3.4.5+deb12").unwrap().to_string(),
         "3.4.5"
     );
+    // Valeur réellement sortie par `dpkg-query` pour aNkou 1.0.1, vérifiée à la main.
+    assert_eq!(version_from_deb("1.0.1-1").unwrap().to_string(), "1.0.1");
 }
 
 #[test]
