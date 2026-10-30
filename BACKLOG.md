@@ -37,14 +37,14 @@ Règles de tenue :
 | Détection Linux et macOS (P2) | 0.4 | #10 | `dpkg-query`, `rpm -q`, `pkgutil`, noms de paquet au manifeste, 15 tests |
 | **Installer et mettre à jour (P3)** | **0.4** | **#11, #12, #13** | **plan, élévation, exécution, branchement UI, installation réelle vérifiée sous Linux** |
 | **Ouvrir l'application installée (P4)** | **0.4** | **#14** | **chemin par système, bouton principal et entrée de menu, 8 tests** |
+| **Toutes les versions et notes de version (P5)** | **0.4** | **#16** | **notes sans requête, historique à la demande, fenêtre de détail, 10 tests** |
+| **Modèle de PR et CONTRIBUTING (P6)** | **0.4** | **#17** | **un modèle et un guide par dépôt : launcher, ankou, lpdnsoft-libs** |
+| **Release du launcher (P7)** | **0.4** | **#18** | **`.deb`/`.rpm`, MSI WiX, `.pkg`, workflow `SHA256SUMS`, runbook, 6 tests garde-fous** |
 
 ## En cours
 
-| Tâche | État | Où |
-|---|---|---|
-| **P5 — Toutes les versions et notes de version** | terminée sur branche : notes lues dans la release (aucune requête), historique chargé à la demande, fenêtre de détail, 10 tests | `crates/core`, `crates/github`, `crates/ui` |
-| **P7 — Release du launcher** | terminée sur branche : métadonnées `.deb`/`.rpm`, MSI WiX, `.pkg` macOS, workflow de release avec `SHA256SUMS`, runbook, 6 tests garde-fous ; **aucun paquet construit ici**, faute d'outils | `packaging/`, `.github/workflows/release.yml` |
-| **P6 — Modèle de PR et CONTRIBUTING** | terminée sur branche : un modèle et un guide par dépôt (launcher, ankou, lpdnsoft-libs) | trois dépôts |
+*Aucune.* Les PR #9 à #18 sont fusionnées. Le premier tag reste à poser (voir
+`docs/runbooks/release.md`).
 
 ## À faire
 
@@ -90,3 +90,4 @@ d'installation devront le dire.
 | 2026-10-30 | 0.4 : ouverture de l'application installée, avec le chemin résolu par système |
 | 2026-10-30 | PR #9 à #14 fusionnées : le backlog passe P1 à P4 en **Fait** |
 | 2026-10-30 | 0.4 : notes de version lues dans la release, historique chargé à la demande |
+| 2026-10-30 | PR #15 à #18 fusionnées : P5, P6 et P7 passent en **Fait** ; plus aucune tâche en cours |

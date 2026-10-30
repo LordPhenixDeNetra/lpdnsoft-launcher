@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           version="${{ needs.version.outputs.version }}"
           cargo deb -p lpdnsoft-launcher --no-build --no-strip
-          cargo generate-rpm -p apps/launcher
+          cargo generate-rpm --manifest-path apps/launcher/Cargo.toml
           mv target/debian/*.deb "lpdnsoft-launcher-$version-linux-x86_64.deb"
           mv target/generate-rpm/*.rpm "lpdnsoft-launcher-$version-linux-x86_64.rpm"
           ls -l lpdnsoft-launcher-*.deb lpdnsoft-launcher-*.rpm
@@ -71,9 +71,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: WiX
+        # WiX 5 s'installe comme outil dotnet ; `choco install wixtoolset` poserait WiX 3,
+        # qui ne connaît pas `wix build` (même choix qu'aNkou, ADR 0011).
         run: |
-          choco install wixtoolset --no-progress -y
-          echo "$env:WIX\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          dotnet tool install --global wix --version 5.0.2
+          echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
       - name: Compilation
         run: cargo build --release -p lpdnsoft-launcher
       - name: MSI
