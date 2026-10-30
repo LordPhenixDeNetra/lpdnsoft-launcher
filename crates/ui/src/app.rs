@@ -34,7 +34,7 @@ pub fn run(lang: Option<String>) -> Result<(), UiError> {
             cc.egui_ctx.set_theme(egui::Theme::Dark);
             let ctx = cc.egui_ctx.clone();
             let wake: Wake = Arc::new(move || ctx.request_repaint());
-            let bridge = Bridge::spawn(apps, wake);
+            let bridge = Bridge::spawn(apps, lpdnsoft_launcher_cache::Cache::system(), wake);
             Ok(Box::new(App { screen, bridge }))
         }),
     )

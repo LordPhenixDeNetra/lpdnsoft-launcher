@@ -7,7 +7,9 @@ use std::str::FromStr;
 ///
 /// Les préversions ne sont pas des versions installables : `1.0.0-rc1` est refusé, comme
 /// dans la vérification de mise à jour d'aNkou.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub struct Version {
     pub major: u64,
     pub minor: u64,

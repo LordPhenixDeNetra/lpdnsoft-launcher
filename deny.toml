@@ -43,3 +43,9 @@ allow-wildcard-paths = true
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+
+# option-ext (via directories → dirs-sys, tiré par lpdnsoft-settings) : MPL-2.0, copyleft
+# limité au fichier, non modifié ici.
+[[licenses.exceptions]]
+crate = "option-ext"
+allow = ["MPL-2.0"]

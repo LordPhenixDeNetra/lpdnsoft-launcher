@@ -19,13 +19,16 @@ dbg_macro = "deny"
 todo = "deny"
 
 [workspace.dependencies]
+lpdnsoft-launcher-cache = { path = "crates/cache", version = "0.1.0" }
 lpdnsoft-launcher-core = { path = "crates/core", version = "0.1.0" }
 lpdnsoft-launcher-github = { path = "crates/github", version = "0.1.0" }
 lpdnsoft-launcher-system = { path = "crates/system", version = "0.1.0" }
 lpdnsoft-launcher-ui = { path = "crates/ui", version = "0.1.0" }
 # Dépôt frère, cloné à côté de celui-ci (même disposition qu'ankou, ADR 0001).
+lpdnsoft-atomic = { path = "../lpdnsoft-libs/crates/atomic", version = "0.1.0" }
 lpdnsoft-i18n = { path = "../lpdnsoft-libs/crates/i18n", version = "0.1.0" }
 lpdnsoft-log = { path = "../lpdnsoft-libs/crates/log", version = "0.1.0" }
+lpdnsoft-settings = { path = "../lpdnsoft-libs/crates/settings", version = "0.1.0" }
 lpdnsoft-ui = { path = "../lpdnsoft-libs/crates/ui", version = "0.1.0" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
@@ -35,6 +38,7 @@ egui_kittest = "0.36"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tempfile = "3"
 thiserror = "2"
 tokio = { version = "1", features = ["rt", "time"] }
 winreg = "0.55"

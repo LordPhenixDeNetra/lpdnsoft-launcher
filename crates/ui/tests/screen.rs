@@ -38,7 +38,10 @@ fn row(id: &str, name: &str, installed: Option<&str>, available: &str) -> Row {
 
 fn screen(rows: Vec<Row>) -> Screen {
     let mut screen = Screen::new(localizer(Some("fr")).unwrap());
-    screen.apply(Update::Catalog(rows));
+    screen.apply(Update::Catalog {
+        rows,
+        cached: false,
+    });
     screen
 }
 
@@ -65,10 +68,23 @@ fn records_the_check_state() {
     assert_eq!(screen.check, Check::Never);
     screen.apply(Update::Checking);
     assert_eq!(screen.check, Check::Running);
-    screen.apply(Update::Catalog(Vec::new()));
+    screen.apply(Update::Catalog {
+        rows: Vec::new(),
+        cached: false,
+    });
     assert_eq!(screen.check, Check::Done);
     screen.apply(Update::Failed("réseau".into()));
     assert_eq!(screen.check, Check::Failed("réseau".into()));
+}
+
+#[test]
+fn says_when_the_catalog_comes_from_the_cache() {
+    let mut screen = Screen::new(localizer(Some("fr")).unwrap());
+    screen.apply(Update::Catalog {
+        rows: Vec::new(),
+        cached: true,
+    });
+    assert_eq!(screen.check, Check::DoneCached);
 }
 
 #[test]

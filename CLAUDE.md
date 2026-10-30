@@ -16,6 +16,8 @@ Launcher de la suite **LPDNSoft** (Rust, egui 0.36, Windows/Linux/macOS). Décis
   une requête par application (ADR 0002).
 - `crates/system` — `lpdnsoft-launcher-system` : version installée, lue dans le registre de
   désinstallation sous Windows ; rien hors Windows pour l'instant.
+- `crates/cache` — `lpdnsoft-launcher-cache` : dernière release connue et empreinte, un
+  fichier par application, écriture atomique (ADR 0003).
 - `crates/ui` — `lpdnsoft-launcher-ui` : fenêtre eframe, liste, pastilles d'état, menu par
   application ; `bridge.rs` fait tourner la vérification sur un fil à part.
 - `apps/launcher` — `lpdnsoft-launcher` : arguments (`--lang en|fr`), journal, lancement.
@@ -71,10 +73,12 @@ Plan d'application : `docs/superpowers/plans/2026-10-30-plan-tests-unitaires.md`
 
 ## État et périmètre
 
-v0.2 lit de **vraies données** : les releases publiées sur GitHub (`GET /releases/latest`,
-une requête par application, soixante par heure sans authentification) et la version
-installée, lue dans le registre de désinstallation sous Windows. La liste des applications
-est `apps.json`, embarqué et validé au démarrage.
+v0.3 lit de **vraies données** : les releases publiées sur GitHub (`GET /releases/latest`,
+une requête conditionnelle par application, soixante par heure sans authentification) et la
+version installée, lue dans le registre de désinstallation sous Windows. La liste des
+applications est `apps.json`, embarqué et validé au démarrage. Chaque réponse est mise en
+cache avec son empreinte : un 304 ne coûte rien au quota, et une panne réseau retombe sur la
+dernière réponse connue, annoncée comme telle (ADR 0003).
 
 Ce qui n'existe pas encore : le téléchargement, la vérification `SHA256SUMS`, l'installation
 et la mise à jour. Ces actions sont **désactivées** dans l'interface, avec une infobulle qui

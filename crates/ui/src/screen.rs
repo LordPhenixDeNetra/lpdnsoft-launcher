@@ -30,7 +30,7 @@ pub enum Request {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Update {
     Checking,
-    Catalog(Vec<Row>),
+    Catalog { rows: Vec<Row>, cached: bool },
     Failed(String),
 }
 
@@ -40,6 +40,8 @@ pub enum Check {
     Never,
     Running,
     Done,
+    /// Vérifiée, mais au moins une réponse vient du cache : à dire, pas à cacher.
+    DoneCached,
     Failed(String),
 }
 
@@ -71,9 +73,13 @@ impl Screen {
         self.notice = None;
         match update {
             Update::Checking => self.check = Check::Running,
-            Update::Catalog(rows) => {
+            Update::Catalog { rows, cached } => {
                 self.catalog = Catalog::new(rows);
-                self.check = Check::Done;
+                self.check = if cached {
+                    Check::DoneCached
+                } else {
+                    Check::Done
+                };
             }
             Update::Failed(detail) => self.check = Check::Failed(detail),
         }
@@ -271,6 +277,10 @@ impl Screen {
                 Check::Never => (t!(&self.loc, "ui-foot-idle"), None),
                 Check::Running => (t!(&self.loc, "ui-foot-checking"), None),
                 Check::Done => (t!(&self.loc, "ui-foot-done"), None),
+                Check::DoneCached => (
+                    t!(&self.loc, "ui-foot-cached"),
+                    Some(status_color(Tone::Busy)),
+                ),
                 Check::Failed(detail) => (
                     t!(&self.loc, "ui-foot-failed", detail = detail.as_str()),
                     Some(status_color(Tone::Alert)),

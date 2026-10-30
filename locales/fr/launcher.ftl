@@ -28,6 +28,7 @@ ui-menu-hide = Masquer l'application
 ui-foot-idle = JAMAIS VÉRIFIÉ
 ui-foot-checking = VÉRIFICATION…
 ui-foot-done = VÉRIFIÉ · VIA GITHUB
+ui-foot-cached = VÉRIFIÉ · DONNÉES EN CACHE
 ui-foot-failed = ÉCHEC : { $detail }
 ui-loading = Récupération des releases…
 ui-unavailable = Disponible dans une prochaine version

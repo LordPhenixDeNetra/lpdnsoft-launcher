@@ -10,6 +10,10 @@ use std::time::Duration;
 
 const API: &str = "https://api.github.com";
 const TIMEOUT: Duration = Duration::from_secs(10);
+/// En-tête qui porte l'empreinte d'une réponse.
+const ETAG_HEADER: &str = "ETag";
+/// En-tête qui redemande une réponse seulement si elle a changé.
+const IF_NONE_MATCH: &str = "If-None-Match";
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum GithubError {
@@ -70,10 +74,21 @@ pub fn client() -> Result<reqwest::Client, GithubError> {
         .map_err(|e| GithubError::Network(e.to_string()))
 }
 
-/// Sort d'une réponse d'après son statut : seul 200 porte une release lisible.
-pub fn classify(status: u16) -> Result<(), GithubError> {
+/// Ce qu'une réponse signifie pour la lecture d'une release.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Outcome {
+    /// 200 : le corps porte la release.
+    New,
+    /// 304 : la version en cache reste valable, il n'y a rien à lire.
+    CacheStillValid,
+}
+
+/// Sort d'une réponse d'après son statut. 304 est une issue normale, pas une erreur :
+/// c'est la réponse qui ne consomme pas le quota de soixante requêtes par heure.
+pub fn classify(status: u16) -> Result<Outcome, GithubError> {
     match status {
-        200 => Ok(()),
+        200 => Ok(Outcome::New),
+        304 => Ok(Outcome::CacheStillValid),
         404 => Err(GithubError::NoRelease),
         403 | 429 => Err(GithubError::RateLimited),
         code => Err(GithubError::Network(format!("GitHub a répondu {code}"))),
@@ -90,21 +105,52 @@ pub fn parse_release(json: &str, app: &AppSpec) -> Result<Release, GithubError> 
     raw.into_release(app)
 }
 
+/// Réponse à une lecture : la release, ou l'annonce que le cache suffit.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Answer {
+    /// `None` quand GitHub répond 304 : garder la release déjà en cache.
+    pub release: Option<Release>,
+    /// Empreinte à renvoyer la prochaine fois, si le serveur en donne une.
+    pub etag: Option<String>,
+}
+
 /// Dernière release publiée d'une application.
+///
+/// `etag` est l'empreinte de la dernière réponse : quand elle est fournie, GitHub répond
+/// 304 sans compter la requête dans le quota.
 pub async fn latest_release(
     client: &reqwest::Client,
     app: &AppSpec,
-) -> Result<Release, GithubError> {
+    etag: Option<&str>,
+) -> Result<Answer, GithubError> {
     let url = format!("{API}/repos/{}/releases/latest", app.repo);
-    let response = client
-        .get(&url)
+    let mut request = client.get(&url);
+    if let Some(etag) = etag {
+        request = request.header(IF_NONE_MATCH, etag);
+    }
+    let response = request
         .send()
         .await
         .map_err(|e| GithubError::Network(e.to_string()))?;
-    classify(response.status().as_u16())?;
-    let body = response
-        .text()
-        .await
-        .map_err(|e| GithubError::Decode(e.to_string()))?;
-    parse_release(&body, app)
+    let etag = response
+        .headers()
+        .get(ETAG_HEADER)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_owned);
+    match classify(response.status().as_u16())? {
+        Outcome::CacheStillValid => Ok(Answer {
+            release: None,
+            etag,
+        }),
+        Outcome::New => {
+            let body = response
+                .text()
+                .await
+                .map_err(|e| GithubError::Decode(e.to_string()))?;
+            Ok(Answer {
+                release: Some(parse_release(&body, app)?),
+                etag,
+            })
+        }
+    }
 }
