@@ -31,20 +31,29 @@ vérifie que le workflow et les fichiers d'empaquetage les produisent bien.
 
 3. **Mettre à jour le suivi** : `BACKLOG.md` (tâche livrée avec son numéro de PR), et
    `README.md` si l'état change.
-4. **Fusionner sur `main`**, puis étiqueter :
+4. **Fusionner sur `main`.** C'est tout : le workflow `Release` se déclenche sur `main`,
+   construit les cinq paquets, calcule `SHA256SUMS`, crée le tag `v<version>` et publie la
+   release.
+
+   Deux garde-fous dans ce déclenchement :
+   - si une release `v<version>` existe déjà, le job `prepare` répond `release=false` et tout
+     le reste est sauté — fusionner deux fois ne publie pas deux fois ;
+   - `concurrency: release` empêche deux publications simultanées.
+
+5. **Les notes de version sont générées par GitHub** (`--generate-notes`) à partir des pull
+   requests fusionnées depuis la release précédente, avec la liste des commits et le lien de
+   comparaison. Personne ne les rédige, donc elles ne peuvent pas devenir fausses — et le
+   launcher les affiche (*Notes*, P5).
+
+6. **En cas d'échec**, corriger puis relancer sans nouveau commit :
 
    ```
-   git switch main
-   git pull
-   git tag -a v0.4.0 -m "LPDNSoft Launcher 0.4.0"
-   git push origin v0.4.0
+   gh workflow run release.yml
    ```
 
-5. **Laisser la CI publier.** Le workflow construit les cinq paquets sur leurs systèmes
-   respectifs, calcule `SHA256SUMS`, puis crée la release GitHub. Un échec sur un système
-   empêche la publication : c'est voulu, une release partielle ferait croire à des paquets
-   manquants.
-6. **Vérifier la release** : la page GitHub doit lister six fichiers, dont `SHA256SUMS`.
+   Le job `prepare` revérifie l'absence de la release et repart.
+
+7. **Vérifier la release** : la page GitHub doit lister six fichiers, dont `SHA256SUMS`.
 
 ## Vérifier un paquet publié
 
