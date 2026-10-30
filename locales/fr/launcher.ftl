@@ -1,0 +1,29 @@
+## Launcher LPDNSoft — chaînes visibles (français).
+
+app-title = Launcher LPDNSoft
+ui-brand = LPDNSOFT
+ui-brand-sub = SUITE D'APPS
+ui-refresh = Actualiser
+ui-update-all = TOUT METTRE À JOUR ({ $count })
+ui-search = Rechercher des applications…
+ui-col-app = APPLICATION
+ui-col-state = ÉTAT
+ui-col-version = VERSION
+ui-col-date = DATE DE PUBL.
+ui-col-author = AUTEUR
+ui-state-not-installed = NON INSTALLÉE
+ui-state-update-available = MISE À JOUR DISPONIBLE
+ui-state-up-to-date = À JOUR
+ui-state-unknown = VERSION INCONNUE
+ui-install = INSTALLER
+ui-update = METTRE À JOUR
+ui-open = OUVRIR
+ui-more = Plus d'actions
+ui-menu-version = Choisir une version
+ui-menu-notes = Notes de version
+ui-menu-website = Site web
+ui-menu-repo = Dépôt GitHub
+ui-menu-all-versions = Toutes les versions
+ui-menu-hide = Masquer l'application
+ui-foot-checked = VÉRIFIÉ À L'INSTANT · VIA GITHUB
+ui-empty = Aucune application ne correspond à « { $query } ».

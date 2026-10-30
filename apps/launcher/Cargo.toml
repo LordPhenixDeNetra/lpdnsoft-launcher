@@ -1,0 +1,17 @@
+[package]
+name = "lpdnsoft-launcher"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Launcher de la suite LPDNSoft"
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+lpdnsoft-launcher-ui = { workspace = true }
+lpdnsoft-log = { workspace = true }

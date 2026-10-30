@@ -1,0 +1,22 @@
+[package]
+name = "lpdnsoft-launcher-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Interface egui du launcher LPDNSoft"
+
+[lints]
+workspace = true
+
+[dependencies]
+lpdnsoft-launcher-core = { workspace = true }
+lpdnsoft-i18n = { workspace = true }
+lpdnsoft-ui = { workspace = true }
+eframe = { workspace = true }
+egui = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+egui_kittest = { workspace = true }
