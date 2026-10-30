@@ -19,7 +19,7 @@ section = "utils"
 priority = "optional"
 assets = [
     ["target/release/lpdnsoft-launcher", "usr/bin/", "755"],
-    ["packaging/linux/lpdnsoft-launcher.desktop", "usr/share/applications/", "644"],
+    [ "../../packaging/linux/lpdnsoft-launcher.desktop", "usr/share/applications/", "644"],
 ]
 
 # Paquet RPM : mêmes fichiers, même nom de paquet.
@@ -28,7 +28,7 @@ summary = "Launcher de la suite LPDNSoft"
 license = "MIT"
 assets = [
     { source = "target/release/lpdnsoft-launcher", dest = "/usr/bin/lpdnsoft-launcher", mode = "755" },
-    { source = "packaging/linux/lpdnsoft-launcher.desktop", dest = "/usr/share/applications/lpdnsoft-launcher.desktop", mode = "644" },
+    { source = "../../packaging/linux/lpdnsoft-launcher.desktop", dest = "/usr/share/applications/lpdnsoft-launcher.desktop", mode = "644" },
 ]
 
 [dependencies]
