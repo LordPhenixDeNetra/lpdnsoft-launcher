@@ -82,7 +82,7 @@ jobs:
           set -euo pipefail
           version="${{ needs.prepare.outputs.version }}"
           cargo deb -p lpdnsoft-launcher --no-build --no-strip
-          cargo generate-rpm -p lpdnsoft-launcher
+          cargo generate-rpm -p apps/launcher
           mv target/debian/*.deb "lpdnsoft-launcher-$version-linux-x86_64.deb"
           mv target/generate-rpm/*.rpm "lpdnsoft-launcher-$version-linux-x86_64.rpm"
           ls -l lpdnsoft-launcher-*.deb lpdnsoft-launcher-*.rpm

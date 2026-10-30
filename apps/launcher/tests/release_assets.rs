@@ -222,8 +222,8 @@ fn the_rpm_command_uses_the_flags_the_tool_accepts() {
     // première rédaction du workflow supposait le contraire et la publication échouait
     // après trois minutes de compilation.
     assert!(
-        RELEASE.contains("cargo generate-rpm -p lpdnsoft-launcher"),
-        "l'outil attend un nom de paquet avec -p"
+        RELEASE.contains("cargo generate-rpm -p apps/launcher"),
+        "l'outil attend le dossier du crate avec -p"
     );
     assert!(
         !RELEASE.contains("generate-rpm --manifest-path"),
