@@ -30,6 +30,9 @@ allow = [
     # Polices par défaut d'egui (epaint_default_fonts) : OFL et licence Ubuntu, permissives.
     "OFL-1.1",
     "Ubuntu-font-1.0",
+    # Autorités de certification de Mozilla (webpki-root-certs, via rustls) : licence de
+    # données permissive, comme webpki-roots.
+    "CDLA-Permissive-2.0",
 ]
 
 [bans]
